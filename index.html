@@ -11,8 +11,8 @@
         h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
         
         .batch-control { display: flex; gap: 10px; align-items: center; background: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        /* 그리드 컬럼을 4개로 조정 (체크박스, 제목, 옵션, 삭제버튼) */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 130px 60px; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 10px; }
-        .header-row { background: #e9ecef; font-weight: bold; border-radius: 8px 8px 0 0; }
         .passage-title { font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .input-group { display: flex; gap: 8px; justify-content: flex-end; }
         .input-group input { width: 45px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
@@ -42,13 +42,6 @@
                 <input type="number" id="global-order" placeholder="순서" style="width:50px;">
                 <input type="number" id="global-insert" placeholder="삽입" style="width:50px;">
                 <button onclick="applyGlobal()" style="background:#555;">적용</button>
-            </div>
-            
-            <div class="passage-row header-row">
-                <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                <span>전체 선택</span>
-                <span style="text-align:right;">설정</span>
-                <span></span>
             </div>
             <div id="passage-list">지문을 불러오는 중...</div>
             <button onclick="generateIntegratedQuiz()" style="background-color: #2980b9; margin-top:20px;">문제지 생성</button>
@@ -80,18 +73,9 @@
             });
         };
 
-        function toggleSelectAll() {
-            const isChecked = document.getElementById('select-all').checked;
-            document.querySelectorAll('.chk-item').forEach(chk => chk.checked = isChecked);
-        }
-
         async function deletePassage(id) {
             if(!confirm("정말 삭제하시겠습니까?")) return;
-            await fetch(GAS_URL, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "delete", id: id }) 
-            });
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "delete", id: id }) });
             location.reload();
         }
 
@@ -112,11 +96,7 @@
             saveBtn.innerText = "저장 중...";
             saveBtn.disabled = true;
             try {
-                const res = await fetch(GAS_URL, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ action: "save", title, content }) 
-                });
+                const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content }) });
                 const result = await res.json();
                 alert(result.message);
                 location.reload(); 
@@ -134,19 +114,10 @@
             document.getElementById('quiz-output').innerHTML = "생성 중...";
             document.getElementById('quiz-output').style.display = "block";
 
-            const res = await fetch(GAS_URL, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, // application/json으로 통일
-                body: JSON.stringify({ action: "generate_batch", passages: selected }) 
-            });
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "generate_batch", passages: selected }) });
             const result = await res.json();
-            
-            if(result.status === "error") {
-                alert("오류 발생: " + result.message);
-            } else {
-                document.getElementById('quiz-output').innerHTML = result.html_content;
-                document.getElementById('pdf-btn').style.display = "block";
-            }
+            document.getElementById('quiz-output').innerHTML = result.html_content;
+            document.getElementById('pdf-btn').style.display = "block";
         }
 
         function downloadPDF() {
