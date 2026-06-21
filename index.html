@@ -56,8 +56,8 @@
     </div>
 
     <script>
-        // ★ 다시 배포를 한 뒤에 발급받은 '새 웹 앱 URL'을 여기에 꼭 넣어주세요!
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwSs_7bifSTJtzGXAzGGIbpmQEc7zndsbIio66U5Ws7k5cmnIeNJdlfhyBTI_k89GED/exec";
+        // 발급받은 웹 앱 URL 유지
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxJp8f3L3r2i_mjWLWnpv8hYmItZ9mA73jTGJscNtLNshaqyZJk1oBn7dPl3NdpFwMB/exec";
 
         window.onload = async () => {
             try {
@@ -185,7 +185,9 @@
                     backgroundColor: '#ffffff', 
                     useCORS: true               
                 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                // ★ 페이지 브레이크 클래스를 인식하도록 옵션 추가
+                pagebreak:    { mode: ['css', 'legacy'] } 
             };
             
             const pdfBtn = document.getElementById('pdf-btn');
