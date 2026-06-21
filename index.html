@@ -16,7 +16,6 @@
         .input-group { display: flex; gap: 8px; justify-content: flex-end; }
         .input-group input { width: 45px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
 
-        /* 문제지 출력 스타일 (페이지 잘림 방지) */
         #quiz-output { padding: 40px; background: white; border: 1px solid #ddd; display: none; }
         .q-box { border: 1px solid #333; padding: 20px; margin-bottom: 25px; border-radius: 8px; break-inside: avoid; page-break-inside: avoid; }
         .q-title { font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px; color: #2c3e50; }
@@ -51,7 +50,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzl8id_KLrsMleugTSg0P72OZs9FlJ2Hcj1GThv5mX2WdJ37CEb7HqvauhE4KjVt_4/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxqobTzwAkiFcSnqptg46xVHOtAJZwG1qf4f53BKZpK-yU-pqU4d_93cyuaM-Kr0YHV/exec";
 
         window.onload = async () => {
             const res = await fetch(GAS_URL + "?action=list");
@@ -80,6 +79,26 @@
             });
         }
 
+        async function saveToDB() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const saveBtn = document.getElementById('save-btn');
+            if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
+            saveBtn.innerText = "저장 중...";
+            saveBtn.disabled = true;
+            try {
+                // 핵심 수정: headers 추가
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ action: "save", title, content }) 
+                });
+                const result = await res.json();
+                alert(result.message);
+                location.reload(); 
+            } catch (e) { alert("저장 실패"); } finally { saveBtn.innerText = "DB에 저장하기"; saveBtn.disabled = false; }
+        }
+
         async function generateIntegratedQuiz() {
             const selected = [];
             document.querySelectorAll('.passage-row').forEach(row => {
@@ -91,7 +110,11 @@
             document.getElementById('quiz-output').innerHTML = "생성 중...";
             document.getElementById('quiz-output').style.display = "block";
 
-            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "generate_batch", passages: selected }) });
+            const res = await fetch(GAS_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "generate_batch", passages: selected }) 
+            });
             const result = await res.json();
             document.getElementById('quiz-output').innerHTML = result.html_content;
             document.getElementById('pdf-btn').style.display = "block";
@@ -104,7 +127,7 @@
                 filename: '영어문제지.pdf', 
                 html2canvas: { scale: 2 }, 
                 jsPDF: { format: 'a4' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // 잘림 방지 설정
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).from(document.getElementById('quiz-output')).save();
         }
     </script>
