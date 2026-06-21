@@ -25,7 +25,7 @@
             <input type="text" id="title" placeholder="예: 24년 3월 고2 31번">
             <label>지문 내용 (문장 단위 줄바꿈)</label>
             <textarea id="content" rows="5" placeholder="영어 문장을 입력하세요."></textarea>
-            <button onclick="saveToDB()">DB에 영구 저장하기</button>
+            <button id="save-btn" onclick="saveToDB()">DB에 영구 저장하기</button>
         </div>
 
         <div class="card">
@@ -56,28 +56,32 @@
     </div>
 
     <script>
-        // ★ 배포한 웹 앱 URL을 넣으세요! (네가 발급받은 URL 그대로 두었어)
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyUsqVTP6HmH6Day82s6wdvTqVU5RPawmOM1bxbfIUyJEQJ-pGmNF2lkg5dQAWF7TN5/exec";
+        // ★ 다시 배포를 한 뒤에 발급받은 '새 웹 앱 URL'을 여기에 꼭 넣어주세요!
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwSs_7bifSTJtzGXAzGGIbpmQEc7zndsbIio66U5Ws7k5cmnIeNJdlfhyBTI_k89GED/exec";
 
-        // 1. 페이지 로딩 시 지문 목록 가져오기
         window.onload = async () => {
             try {
                 const res = await fetch(GAS_URL + "?action=list");
                 const list = await res.json();
                 const select = document.getElementById('passage-select');
                 select.innerHTML = '<option value="">지문을 선택하세요</option>';
-                list.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item.id;
-                    opt.text = item.title;
-                    select.appendChild(opt);
-                });
+                
+                if(list.length > 0) {
+                    list.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.text = item.title;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">저장된 지문이 없습니다.</option>';
+                }
             } catch (err) {
                 console.error("목록 불러오기 실패:", err);
+                document.getElementById('passage-select').innerHTML = '<option value="">⚠️ 구글 연동 오류 (권한을 확인하세요)</option>';
             }
         };
 
-        // 2. 지문을 선택하면 DB에서 내용을 불러와 미리 보여주는 함수
         async function loadPreview() {
             const passage_id = document.getElementById('passage-select').value;
             const previewBox = document.getElementById('preview-box');
@@ -99,24 +103,45 @@
             }
         }
 
-        // 3. 지문 저장 로직
         async function saveToDB() {
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
-            if(!title || !content) return alert("모두 입력해주세요.");
+            const saveBtn = document.getElementById('save-btn');
 
-            document.querySelector('button[onclick="saveToDB()"]').innerText = "저장 중...";
-            const res = await fetch(GAS_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: "save", title, content })
-            });
-            const result = await res.json();
-            alert(result.message);
-            location.reload(); 
+            if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
+
+            saveBtn.innerText = "저장 중... 잠시만 기다려주세요.";
+            saveBtn.disabled = true;
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "save", title, content })
+                });
+                
+                const responseText = await res.text(); 
+                
+                try {
+                    const result = JSON.parse(responseText);
+                    if(result.status === "error") {
+                        alert(result.message);
+                    } else {
+                        alert(result.message);
+                        location.reload(); 
+                    }
+                } catch(parseErr) {
+                    console.error("구글 서버 에러 응답:", responseText);
+                    alert("⚠️ 구글 배포 권한이 닫혀있습니다. GAS에서 '모든 사용자(Anyone)'로 배포되었는지 확인하세요.");
+                }
+            } catch (networkErr) {
+                alert("네트워크 연결 오류가 발생했습니다.");
+            } finally {
+                saveBtn.innerText = "DB에 영구 저장하기";
+                saveBtn.disabled = false;
+            }
         }
 
-        // 4. 문제 생성 로직
         async function generateQuiz() {
             const passage_id = document.getElementById('passage-select').value;
             const order_cnt = document.getElementById('order_cnt').value;
@@ -127,24 +152,26 @@
             document.getElementById('quiz-output').innerHTML = "문제 조립 중... ⚙️";
             document.getElementById('quiz-output').style.display = "block";
 
-            const res = await fetch(GAS_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: "generate", passage_id, order_cnt, insert_cnt })
-            });
-            const result = await res.json();
-            
-            if(result.status === "success") {
-                document.getElementById('quiz-output').innerHTML = result.html_content;
-                document.getElementById('pdf-btn').style.display = "block";
-            } else {
-                alert(result.message);
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "generate", passage_id, order_cnt, insert_cnt })
+                });
+                const result = await res.json();
+                
+                if(result.status === "success") {
+                    document.getElementById('quiz-output').innerHTML = result.html_content;
+                    document.getElementById('pdf-btn').style.display = "block";
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) {
+                alert("문제 생성 중 오류가 발생했습니다. 권한 설정을 확인하세요.");
             }
         }
 
-        // 5. PDF 생성 (빈 화면 캡처 방지 스크롤 로직 추가)
         function downloadPDF() {
-            // ★ 화면 스크롤을 맨 위로 올려서 엉뚱한 곳이 캡처되는 것을 방지합니다.
             window.scrollTo(0, 0);
 
             const element = document.getElementById('quiz-output');
@@ -154,19 +181,19 @@
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
                     scale: 2, 
-                    scrollY: 0,                 // 스크롤 위치 초기화
-                    backgroundColor: '#ffffff', // 배경을 하얀색으로 칠해 글씨가 투명해지는 것 방지
-                    useCORS: true               // 텍스트/폰트 누락 방지
+                    scrollY: 0,                 
+                    backgroundColor: '#ffffff', 
+                    useCORS: true               
                 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
             
             const pdfBtn = document.getElementById('pdf-btn');
             const originalText = pdfBtn.innerText;
-            pdfBtn.innerText = "⏳ PDF 변환 중..."; // 변환 중 상태 표시
+            pdfBtn.innerText = "⏳ PDF 변환 중...";
             
             html2pdf().set(opt).from(element).save().then(() => {
-                pdfBtn.innerText = originalText; // 변환 완료 후 버튼 원래대로
+                pdfBtn.innerText = originalText;
             });
         }
     </script>
