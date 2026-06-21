@@ -11,10 +11,8 @@
         h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
         
         .batch-control { display: flex; gap: 10px; align-items: center; background: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        /* 그리드 컬럼: 체크박스, 제목, 옵션(순서/삽입), 삭제버튼 */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 130px 60px; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 10px; }
         .header-row { background: #e9ecef; font-weight: bold; border-radius: 8px 8px 0 0; }
-        
         .passage-title { font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .input-group { display: flex; gap: 8px; justify-content: flex-end; }
         .input-group input { width: 45px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
@@ -61,7 +59,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzyw9b4x6WdweTdues9-Lg8phnf-Z0U8GGTQB3NHlH8OpAajCDJaMtLGFKVcFkkyBac/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwBFLd5lHKqzivTlWGoQ1CIHMdMP-ayHRxVe_4mE1Nf1ZqSrB4pBNhH2r1KRRLjKGQ/exec";
 
         window.onload = async () => {
             const res = await fetch(GAS_URL + "?action=list");
@@ -82,19 +80,16 @@
             });
         };
 
-        // 전체 선택/해제 기능
         function toggleSelectAll() {
             const isChecked = document.getElementById('select-all').checked;
-            document.querySelectorAll('.chk-item').forEach(chk => {
-                chk.checked = isChecked;
-            });
+            document.querySelectorAll('.chk-item').forEach(chk => chk.checked = isChecked);
         }
 
         async function deletePassage(id) {
             if(!confirm("정말 삭제하시겠습니까?")) return;
             await fetch(GAS_URL, { 
                 method: "POST", 
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "delete", id: id }) 
             });
             location.reload();
@@ -119,7 +114,7 @@
             try {
                 const res = await fetch(GAS_URL, { 
                     method: "POST", 
-                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    headers: { "Content-Type": "application/json" }, 
                     body: JSON.stringify({ action: "save", title, content }) 
                 });
                 const result = await res.json();
@@ -139,15 +134,19 @@
             document.getElementById('quiz-output').innerHTML = "생성 중...";
             document.getElementById('quiz-output').style.display = "block";
 
-            // [핵심수정] 여기 헤더 추가됨
             const res = await fetch(GAS_URL, { 
                 method: "POST", 
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                headers: { "Content-Type": "application/json" }, // application/json으로 통일
                 body: JSON.stringify({ action: "generate_batch", passages: selected }) 
             });
             const result = await res.json();
-            document.getElementById('quiz-output').innerHTML = result.html_content;
-            document.getElementById('pdf-btn').style.display = "block";
+            
+            if(result.status === "error") {
+                alert("오류 발생: " + result.message);
+            } else {
+                document.getElementById('quiz-output').innerHTML = result.html_content;
+                document.getElementById('pdf-btn').style.display = "block";
+            }
         }
 
         function downloadPDF() {
