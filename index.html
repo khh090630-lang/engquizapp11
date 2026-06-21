@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>영어 문제 은행 (GAS 연동)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
+        label { font-weight: bold; display: block; margin: 15px 0 5px; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%; }
+        button:hover { opacity: 0.9; }
+        #quiz-output { padding: 30px; background: white; margin-top: 20px; border: 1px solid #ddd; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>💾 1. 지문 등록 (스프레드시트에 저장)</h2>
+            <label>지문 제목</label>
+            <input type="text" id="title" placeholder="예: 24년 3월 고2 31번">
+            <label>지문 내용 (문장 단위 줄바꿈)</label>
+            <textarea id="content" rows="5" placeholder="영어 문장을 입력하세요."></textarea>
+            <button onclick="saveToDB()">DB에 저장하기</button>
+        </div>
+
+        <div class="card">
+            <h2>📝 2. 문제 생성 및 PDF 다운로드</h2>
+            <label>저장된 지문 선택</label>
+            <select id="passage-select">
+                <option value="">지문을 불러오는 중...</option>
+            </select>
+
+            <div style="display: flex; gap: 10px;">
+                <div style="flex:1;">
+                    <label>순서 배열 문제 수</label>
+                    <input type="number" id="order_cnt" value="1" min="0">
+                </div>
+                <div style="flex:1;">
+                    <label>문장 삽입 문제 수</label>
+                    <input type="number" id="insert_cnt" value="1" min="0">
+                </div>
+            </div>
+
+            <button onclick="generateQuiz()" style="background-color: #2980b9;">문제 생성하기</button>
+        </div>
+
+        <div id="quiz-output"></div>
+        <button id="pdf-btn" onclick="downloadPDF()" style="display: none; background-color: #e74c3c;">📄 PDF로 다운로드</button>
+    </div>
+
+    <script>
+        // ★ 여기에 Apps Script 배포 후 얻은 웹 앱 URL을 붙여넣으세요!
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby3D5ECgP6Icvo9PpDd8MDtkZy8U9Q1r6QykUujYYviTuAS_RJurm2ErT6pMnO1XB90/exec";
+
+        // 페이지 로딩 시 지문 목록 가져오기
+        window.onload = async () => {
+            try {
+                const res = await fetch(GAS_URL + "?action=list");
+                const list = await res.json();
+                const select = document.getElementById('passage-select');
+                select.innerHTML = '<option value="">지문을 선택하세요</option>';
+                list.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.text = item.title;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("목록 불러오기 실패:", err);
+            }
+        };
+
+        // 지문 저장 로직 (CORS 우회를 위해 text/plain 사용)
+        async function saveToDB() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            if(!title || !content) return alert("모두 입력해주세요.");
+
+            const res = await fetch(GAS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "save", title, content })
+            });
+            const result = await res.json();
+            alert(result.message);
+            location.reload(); // 목록 갱신
+        }
+
+        // 문제 생성 로직
+        async function generateQuiz() {
+            const passage_id = document.getElementById('passage-select').value;
+            const order_cnt = document.getElementById('order_cnt').value;
+            const insert_cnt = document.getElementById('insert_cnt').value;
+            
+            if(!passage_id) return alert("지문을 선택해주세요.");
+
+            document.getElementById('quiz-output').innerHTML = "생성 중...";
+            document.getElementById('quiz-output').style.display = "block";
+
+            const res = await fetch(GAS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "generate", passage_id, order_cnt, insert_cnt })
+            });
+            const result = await res.json();
+            
+            if(result.status === "success") {
+                document.getElementById('quiz-output').innerHTML = result.html_content;
+                document.getElementById('pdf-btn').style.display = "block";
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // 브라우저 단에서 PDF 생성
+        function downloadPDF() {
+            const element = document.getElementById('quiz-output');
+            const opt = {
+                margin:       10,
+                filename:     '영어변형문제.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
