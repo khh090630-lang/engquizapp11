@@ -10,12 +10,15 @@
         .card { background: white; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
         label { font-weight: bold; display: block; margin: 15px 0 5px; }
-        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         button { background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%; font-weight: bold;}
         button:hover { opacity: 0.9; }
-        /* 체크박스 리스트 스타일 */
-        .passage-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; gap: 10px; }
-        .passage-row input[type="number"] { width: 60px; padding: 5px; }
+        
+        /* 레이아웃 개선 */
+        .batch-control { display: flex; gap: 10px; align-items: center; background: #eef; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .passage-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; gap: 15px; }
+        .passage-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+        .input-box { width: 60px; padding: 5px; text-align: center; }
         #quiz-output { padding: 30px; background: white; margin-top: 20px; border: 1px solid #ddd; display: none; }
     </style>
 </head>
@@ -32,6 +35,14 @@
 
         <div class="card">
             <h2>📝 2. 출제할 지문 선택 및 문제 생성</h2>
+            
+            <div class="batch-control">
+                <label style="margin:0;">전체 문제수 적용:</label>
+                <input type="number" id="global-order" placeholder="순서" style="width:60px;" value="1">
+                <input type="number" id="global-insert" placeholder="삽입" style="width:60px;" value="1">
+                <button onclick="applyGlobal()" style="margin:0; width:auto; font-size:12px;">일괄 적용</button>
+            </div>
+
             <div id="passage-list">지문을 불러오는 중...</div>
             <button onclick="generateIntegratedQuiz()" style="background-color: #2980b9; margin-top:20px;">선택 지문 통합 문제 생성</button>
         </div>
@@ -52,7 +63,7 @@
                 container.innerHTML += `
                     <div class="passage-row">
                         <input type="checkbox" class="chk-item" value="${item.id}">
-                        <span style="flex:1;">${item.title}</span>
+                        <span class="passage-title" title="${item.title}">${item.title}</span>
                         <label style="margin:0; font-size:12px;">순서:</label>
                         <input type="number" class="order-cnt" value="1" min="0">
                         <label style="margin:0; font-size:12px;">삽입:</label>
@@ -60,6 +71,16 @@
                     </div>`;
             });
         };
+
+        // 일괄 적용 기능
+        function applyGlobal() {
+            const order = document.getElementById('global-order').value;
+            const insert = document.getElementById('global-insert').value;
+            document.querySelectorAll('.passage-row').forEach(row => {
+                row.querySelector('.order-cnt').value = order;
+                row.querySelector('.insert-cnt').value = insert;
+            });
+        }
 
         async function saveToDB() {
             const title = document.getElementById('title').value;
