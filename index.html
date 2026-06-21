@@ -2,23 +2,18 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>영어 문제 은행 (GAS 연동)</title>
+    <title>영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 900px; margin: 0 auto; }
         .card { background: white; padding: 25px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
-        label { font-weight: bold; display: block; margin: 15px 0 5px; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%; font-weight: bold;}
-        button:hover { opacity: 0.9; }
-        
-        /* 레이아웃 개선 */
-        .batch-control { display: flex; gap: 10px; align-items: center; background: #eef; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .passage-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; gap: 15px; }
-        .passage-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
-        .input-box { width: 60px; padding: 5px; text-align: center; }
+        .batch-control { display: flex; gap: 15px; align-items: center; background: #eef; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .passage-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 15px; }
+        .passage-title { flex: 2; font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .input-group { flex: 1; display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+        .input-group input { width: 50px; padding: 5px; }
         #quiz-output { padding: 30px; background: white; margin-top: 20px; border: 1px solid #ddd; display: none; }
     </style>
 </head>
@@ -26,23 +21,19 @@
     <div class="container">
         <div class="card">
             <h2>💾 1. 새 지문 DB에 등록하기</h2>
-            <label>지문 제목</label>
-            <input type="text" id="title" placeholder="예: 24년 3월 고2 31번">
-            <label>지문 내용 (문장 단위 줄바꿈)</label>
-            <textarea id="content" rows="5" placeholder="영어 문장을 입력하세요."></textarea>
-            <button id="save-btn" onclick="saveToDB()">DB에 영구 저장하기</button>
+            <input type="text" id="title" placeholder="지문 제목 입력" style="margin-bottom:10px;">
+            <textarea id="content" rows="5" placeholder="영어 문장을 줄바꿈으로 구분하여 입력하세요."></textarea>
+            <button id="save-btn" onclick="saveToDB()" style="background-color: #27ae60;">DB에 영구 저장하기</button>
         </div>
 
         <div class="card">
             <h2>📝 2. 출제할 지문 선택 및 문제 생성</h2>
-            
             <div class="batch-control">
-                <label style="margin:0;">전체 문제수 적용:</label>
-                <input type="number" id="global-order" placeholder="순서" style="width:60px;" value="1">
-                <input type="number" id="global-insert" placeholder="삽입" style="width:60px;" value="1">
-                <button onclick="applyGlobal()" style="margin:0; width:auto; font-size:12px;">일괄 적용</button>
+                <label>일괄 설정:</label>
+                <input type="number" id="global-order" placeholder="순서" value="1">
+                <input type="number" id="global-insert" placeholder="삽입" value="1">
+                <button onclick="applyGlobal()" style="width:auto; margin:0; padding: 5px 15px;">전체 적용</button>
             </div>
-
             <div id="passage-list">지문을 불러오는 중...</div>
             <button onclick="generateIntegratedQuiz()" style="background-color: #2980b9; margin-top:20px;">선택 지문 통합 문제 생성</button>
         </div>
@@ -52,7 +43,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxjVYaZawagRZcxuyVrJYi2kJ731lJBUNQz99zZZzdP5YqZXkW466dn7arn-2W07oX2/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxPNowx8zS6hZeWqzc0pu-_qc5ca080Kr6X2OlNE44lS6EZeO8X7yy0vKBaS6Bmkdw/exec";
 
         window.onload = async () => {
             const res = await fetch(GAS_URL + "?action=list");
@@ -63,16 +54,15 @@
                 container.innerHTML += `
                     <div class="passage-row">
                         <input type="checkbox" class="chk-item" value="${item.id}">
-                        <span class="passage-title" title="${item.title}">${item.title}</span>
-                        <label style="margin:0; font-size:12px;">순서:</label>
-                        <input type="number" class="order-cnt" value="1" min="0">
-                        <label style="margin:0; font-size:12px;">삽입:</label>
-                        <input type="number" class="insert-cnt" value="1" min="0">
+                        <span class="passage-title">${item.title}</span>
+                        <div class="input-group">
+                            <label>순서:</label><input type="number" class="order-cnt" value="1" min="0">
+                            <label>삽입:</label><input type="number" class="insert-cnt" value="1" min="0">
+                        </div>
                     </div>`;
             });
         };
 
-        // 일괄 적용 기능
         function applyGlobal() {
             const order = document.getElementById('global-order').value;
             const insert = document.getElementById('global-insert').value;
@@ -90,7 +80,7 @@
             saveBtn.innerText = "저장 중...";
             saveBtn.disabled = true;
             try {
-                const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content }) });
+                const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "save", title, content }) });
                 const result = await res.json();
                 alert(result.message);
                 location.reload(); 
@@ -101,24 +91,14 @@
             const selected = [];
             document.querySelectorAll('.passage-row').forEach(row => {
                 const chk = row.querySelector('.chk-item');
-                if(chk.checked) {
-                    selected.push({
-                        id: chk.value,
-                        order: row.querySelector('.order-cnt').value,
-                        insert: row.querySelector('.insert-cnt').value
-                    });
-                }
+                if(chk.checked) selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value });
             });
             if(selected.length === 0) return alert("지문을 선택해주세요.");
 
             document.getElementById('quiz-output').innerHTML = "문제 생성 중... ⚙️";
             document.getElementById('quiz-output').style.display = "block";
 
-            const res = await fetch(GAS_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: "generate_batch", passages: selected })
-            });
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "generate_batch", passages: selected }) });
             const result = await res.json();
             document.getElementById('quiz-output').innerHTML = result.html_content;
             document.getElementById('pdf-btn').style.display = "block";
@@ -126,8 +106,7 @@
 
         function downloadPDF() {
             window.scrollTo(0, 0);
-            const opt = { margin: 15, filename: '통합_영어문제지.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, scrollY: 0, backgroundColor: '#ffffff', useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } };
-            html2pdf().set(opt).from(document.getElementById('quiz-output')).save();
+            html2pdf().set({ margin: 15, filename: '통합_영어문제지.pdf', html2canvas: { scale: 2 }, jsPDF: { format: 'a4' } }).from(document.getElementById('quiz-output')).save();
         }
     </script>
 </body>
