@@ -5,24 +5,26 @@
     <title>영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; background: #f8f9fa; padding: 20px; line-height: 1.6; }
+        body { font-family: 'Pretendard', sans-serif; background: #f8f9fa; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; }
         .card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; margin-top: 0; }
+        h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
         
         /* 출제 목록 레이아웃 */
-        .batch-control { display: flex; gap: 15px; align-items: center; background: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
-        .passage-row { display: grid; grid-template-columns: 30px 1fr 120px; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 10px; }
-        .passage-title { font-size: 14px; font-weight: 600; color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .batch-control { display: flex; gap: 10px; align-items: center; background: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .passage-row { display: grid; grid-template-columns: 30px 1fr 130px; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 15px; }
+        .passage-title { font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .input-group { display: flex; gap: 8px; justify-content: flex-end; }
-        .input-group input { width: 45px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .input-group input { width: 45px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
 
-        /* 문제지 출력 스타일 (모의고사 느낌) */
-        #quiz-output { padding: 40px; background: white; margin-top: 20px; border: 1px solid #ddd; display: none; }
-        .q-box { border: 1px solid #999; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; }
-        .q-title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; display: block; }
+        /* 모의고사 문제 스타일 */
+        #quiz-output { padding: 40px; background: white; border: 1px solid #ddd; display: none; }
+        .q-box { border: 1px solid #333; padding: 20px; margin-bottom: 25px; border-radius: 8px; }
+        .q-title { font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px; }
+        /* 박스 안의 박스 스타일 */
+        .box-content { border: 1px solid #000; padding: 12px; margin: 10px 0; background: #f9f9f9; text-align: center; font-size: 1.05em; }
         
-        button { background-color: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
+        button { background-color: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -37,13 +39,13 @@
         <div class="card">
             <h2>📝 2. 출제할 지문 선택</h2>
             <div class="batch-control">
-                <label>일괄 설정:</label>
+                <label>일괄 적용:</label>
                 <input type="number" id="global-order" placeholder="순서" value="1">
                 <input type="number" id="global-insert" placeholder="삽입" value="1">
-                <button onclick="applyGlobal()" style="background:#555;">전체 적용</button>
+                <button onclick="applyGlobal()" style="background:#555;">적용</button>
             </div>
-            <div id="passage-list">불러오는 중...</div>
-            <button onclick="generateIntegratedQuiz()" style="background-color: #2980b9; margin-top:20px;">통합 문제지 생성</button>
+            <div id="passage-list">지문을 불러오는 중...</div>
+            <button onclick="generateIntegratedQuiz()" style="background-color: #2980b9; margin-top:20px;">문제지 생성</button>
         </div>
 
         <div id="quiz-output"></div>
@@ -51,7 +53,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxqobTzwAkiFcSnqptg46xVHOtAJZwG1qf4f53BKZpK-yU-pqU4d_93cyuaM-Kr0YHV/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwY0lywC16KYTLcOCiKDj1G_l-oN6t5WS36FyMmgYl0_aSjFzeUm2mYTqzC79oTE96v/exec";
 
         window.onload = async () => {
             const res = await fetch(GAS_URL + "?action=list");
@@ -93,8 +95,6 @@
 
             const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "generate_batch", passages: selected }) });
             const result = await res.json();
-            
-            // 문제지 출력 시 q-box 클래스 적용 (서버 응답 HTML도 이 클래스를 사용하도록 수정 필요)
             document.getElementById('quiz-output').innerHTML = result.html_content;
             document.getElementById('pdf-btn').style.display = "block";
         }
