@@ -46,7 +46,6 @@
             border-radius: 8px; margin-bottom: 15px;
             font-family: inherit; font-size: 15px; font-weight: bold;
         }
-        /* select 안의 옵션 배경색을 어둡게 지정하여 글씨가 보이게 처리 */
         select option { background: #1e293b; color: #e0f8ff; }
 
         input:focus, textarea:focus, select:focus {
@@ -85,6 +84,38 @@
         .modal-box { width: 100%; max-width: 600px; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
+
+        /* ========================================================
+           [신규 추가] 폴더 아코디언(접기/펴기) 관련 스타일
+           ======================================================== */
+        .folder-header {
+            background: rgba(0,0,0,0.4); 
+            padding: 12px 15px; 
+            margin-top: 15px; 
+            border-radius: 8px 8px 0 0; 
+            color: #6ee7b7; 
+            font-weight: bold; 
+            border: 1px solid rgba(0,242,254,0.1); 
+            border-bottom: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+        .folder-header:hover {
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .folder-content {
+            display: block; /* 기본값은 펼쳐짐 */
+        }
+        .toggle-icon {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+        .folder-header.collapsed .toggle-icon {
+            transform: rotate(-90deg); /* 닫혔을 때 화살표 회전 */
+        }
 
         /* 인쇄용 문제지 1단(Single Column) 구조 유지 */
         #quiz-output { 
@@ -182,7 +213,6 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw39M87aqUxLEArYg9yvcKfU_IAvfyB08ZHIM4k2hyQ5CrcU_kSHi0f_19CBM08SQ4c/exec";
         
-        // 전역 폴더 목록 (Set을 사용하여 중복 방지)
         let globalFolders = new Set(["미분류"]);
 
         window.onload = async () => {
@@ -190,7 +220,6 @@
                 const res = await fetch(GAS_URL + "?action=list");
                 const list = await res.json();
                 const container = document.getElementById('passage-list');
-                container.innerHTML = "";
                 
                 if(list.length === 0) {
                     container.innerHTML = "<p style='text-align:center; color:#a5f3fc; padding:20px; font-weight:bold;'>등록된 지문이 없습니다.</p>";
@@ -201,22 +230,31 @@
                 const folders = {};
                 list.forEach(item => {
                     const f = item.folder || "미분류";
-                    globalFolders.add(f); // 로드 시 존재하는 폴더 모두 수집
+                    globalFolders.add(f); 
                     if(!folders[f]) folders[f] = [];
                     folders[f].push(item);
                 });
                 
-                // 드롭다운 업데이트
                 updateFolderDropdowns();
 
+                // [신규] 폴더 목록 생성 (아코디언 토글 기능 포함)
+                let htmlStr = "";
+                let folderIndex = 0;
+                
                 for (const [folderName, items] of Object.entries(folders)) {
-                    container.innerHTML += `
-                        <div style="background: rgba(0,0,0,0.4); padding: 10px 15px; margin-top: 15px; border-radius: 8px 8px 0 0; color: #6ee7b7; font-weight: bold; border: 1px solid rgba(0,242,254,0.1); border-bottom: none;">
-                            📂 ${folderName} <span style="font-size: 12px; color: #94a3b8;">(${items.length})</span>
+                    const headerId = `folder-header-${folderIndex}`;
+                    const contentId = `folder-content-${folderIndex}`;
+                    
+                    htmlStr += `
+                        <div id="${headerId}" class="folder-header" onclick="toggleFolder('${headerId}', '${contentId}')">
+                            <span>📂 ${folderName} <span style="font-size: 12px; color: #94a3b8;">(${items.length})</span></span>
+                            <span class="toggle-icon">▼</span>
                         </div>
+                        <div id="${contentId}" class="folder-content">
                     `;
+                    
                     items.forEach(item => {
-                        container.innerHTML += `
+                        htmlStr += `
                             <div class="passage-row" style="background: rgba(0,0,0,0.15); border-radius: 0;">
                                 <input type="checkbox" class="chk-item" value="${item.id}">
                                 <span class="passage-title" title="${item.title}">${item.title}</span>
@@ -232,17 +270,33 @@
                                 </div>
                             </div>`;
                     });
+                    htmlStr += `</div>`;
+                    folderIndex++;
                 }
+                container.innerHTML = htmlStr;
+                
             } catch (err) {
                 document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#ffb199; padding:20px; font-weight:bold;'>서버 통신 오류가 발생했습니다.</p>";
             }
         };
 
-        // 폴더 드롭다운 목록 새로고침 함수
+        // [신규] 폴더 펼치기/접기 토글 함수
+        function toggleFolder(headerId, contentId) {
+            const header = document.getElementById(headerId);
+            const content = document.getElementById(contentId);
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                header.classList.remove("collapsed");
+            } else {
+                content.style.display = "none";
+                header.classList.add("collapsed");
+            }
+        }
+
         function updateFolderDropdowns() {
             const selects = [document.getElementById('folder'), document.getElementById('bulk-folder'), document.getElementById('edit-folder')];
             selects.forEach(sel => {
-                const currentVal = sel.value; // 현재 선택값 임시 저장
+                const currentVal = sel.value; 
                 sel.innerHTML = "";
                 globalFolders.forEach(f => {
                     const opt = document.createElement('option');
@@ -250,20 +304,16 @@
                     opt.text = f;
                     sel.appendChild(opt);
                 });
-                // 이전에 선택했던 값이 있으면 그대로 유지
                 if(globalFolders.has(currentVal)) { sel.value = currentVal; }
             });
         }
 
-        // 새 폴더 만들기 버튼 로직 (프롬프트 창)
         function createNewFolder() {
             const fName = prompt("생성할 새로운 폴더 이름을 입력하세요:");
             if (fName && fName.trim() !== "") {
                 const cleanName = fName.trim();
                 globalFolders.add(cleanName);
                 updateFolderDropdowns();
-                
-                // 생성 직후 모든 선택창을 새로 만든 폴더로 자동 고정
                 document.getElementById('folder').value = cleanName;
                 document.getElementById('bulk-folder').value = cleanName;
                 document.getElementById('edit-folder').value = cleanName;
@@ -288,7 +338,6 @@
             });
         }
 
-        // 선택한 지문 폴더 일괄 이동
         async function moveSelectedToFolder() {
             const folder = document.getElementById('bulk-folder').value;
             if (!folder) return alert("이동할 폴더를 선택하세요.");
@@ -334,13 +383,13 @@
         async function openEditModal(id) {
             document.getElementById('edit-modal').style.display = 'flex';
             document.getElementById('edit-title').value = "로딩 중...";
+            document.getElementById('edit-folder').value = "";
             document.getElementById('edit-content').value = "";
             document.getElementById('edit-id').value = id;
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id);
                 const data = await res.json();
                 
-                // 만약 불러온 폴더가 목록에 없다면(그럴 일은 드물지만) 추가해줌
                 if(data.folder && !globalFolders.has(data.folder)) {
                     globalFolders.add(data.folder);
                     updateFolderDropdowns();
