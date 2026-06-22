@@ -2,99 +2,198 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>영어 문제 은행</title>
+    <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; background: #f8f9fa; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h2 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
+        /* 미래적인 UI 폰트 및 배경 설정 */
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            color: #f8fafc;
+            padding: 40px 20px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container { max-width: 950px; margin: 0 auto; }
         
-        .batch-control { display: flex; gap: 10px; align-items: center; background: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        /* Glassmorphism 카드 디자인 */
+        .card { 
+            background: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 30px; 
+            border-radius: 20px; 
+            margin-bottom: 25px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); 
+        }
         
-        /* 그리드 컬럼: 체크박스, 제목, 옵션, 삭제버튼 */
-        .passage-row { display: grid; grid-template-columns: 30px 1fr 130px 60px; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 10px; }
-        .header-row { background: #e9ecef; font-weight: bold; border-radius: 8px 8px 0 0; }
-        
-        .passage-title { font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .input-group { display: flex; gap: 8px; justify-content: flex-end; }
-        .input-group input { width: 45px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        h2 { 
+            margin-top: 0;
+            font-weight: 800;
+            background: linear-gradient(to right, #00f2fe, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            padding-bottom: 15px; 
+            letter-spacing: -0.5px;
+        }
 
-        #quiz-output { padding: 40px; background: white; border: 1px solid #ddd; display: none; }
-        .q-box { border: 1px solid #333; padding: 20px; margin-bottom: 25px; border-radius: 8px; break-inside: avoid; page-break-inside: avoid; }
-        .q-title { font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px; color: #2c3e50; }
-        .box-content { border: 1px solid #000; padding: 12px; margin: 10px 0; background: #f9f9f9; text-align: center; font-size: 1.05em; font-weight: bold;}
+        /* 폼 입력 디자인 */
+        input[type="text"], input[type="number"], textarea {
+            width: 100%; box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; padding: 12px;
+            border-radius: 8px; margin-bottom: 15px;
+            font-family: inherit; font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #00f2fe;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+
+        /* 공통 버튼 디자인 */
+        button { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white; border: none; padding: 12px 20px; border-radius: 8px; 
+            cursor: pointer; font-size: 15px; font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5); }
+        .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3); }
+        .btn-create:hover { box-shadow: 0 6px 20px rgba(0, 114, 255, 0.5); }
         
-        button { background-color: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; }
-        .del-btn { background-color: #e74c3c; padding: 5px 10px; font-size: 12px; }
+        /* 테이블/목록 레이아웃 */
+        .batch-control { display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 15px; transition: background 0.2s; }
+        .passage-row:hover { background: rgba(255,255,255,0.02); }
+        .header-row { background: rgba(0,0,0,0.3); font-weight: bold; border-radius: 12px 12px 0 0; border: none; }
+        
+        .passage-title { font-size: 15px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .input-group { display: flex; gap: 8px; justify-content: flex-end; align-items: center;}
+        .input-group input { width: 50px; padding: 6px; margin: 0; text-align: center; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 8px; font-size: 13px; border-radius: 6px; flex: 1;}
+        .btn-edit { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #333; box-shadow: none; }
+        .btn-del { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); box-shadow: none; }
+
+        /* 수정 모달 팝업 디자인 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-box { width: 100%; max-width: 600px; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+        .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; box-shadow: none; }
+        .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+
+        /* 인쇄 및 PDF용 문제지 출력 영역 (화이트 톤 유지) */
+        #quiz-output { 
+            padding: 50px; background: white; color: black; 
+            border-radius: 12px; display: none; margin-top: 30px;
+        }
+        .q-box { border: 1px solid #777; padding: 25px; margin-bottom: 30px; border-radius: 8px; break-inside: avoid; page-break-inside: avoid; }
+        .q-title { font-weight: bold; font-size: 1.15em; display: block; margin-bottom: 12px; color: #111; }
+        .box-content { border: 1.5px solid #000; padding: 15px; margin: 15px 0; background: #f8f9fa; text-align: center; font-size: 1.05em; font-weight: bold; color: #000;}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h2>💾 1. 새 지문 등록</h2>
-            <input type="text" id="title" placeholder="지문 제목" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ccc;">
-            <textarea id="content" rows="5" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ccc;" placeholder="영어 문장을 줄바꿈으로 구분하여 입력하세요."></textarea>
-            <button id="save-btn" onclick="saveToDB()">DB에 저장하기</button>
+            <h2>✨ 1. 새로운 지문 데이터 등록</h2>
+            <input type="text" id="title" placeholder="지문 제목 (예: 24년 3월 고2 31번)">
+            <textarea id="content" rows="4" placeholder="여기에 영어 문장을 줄바꿈으로 구분하여 입력하세요..."></textarea>
+            <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
         </div>
 
         <div class="card">
-            <h2>📝 2. 출제할 지문 선택</h2>
+            <h2>🎯 2. 지문 관리 및 출제 설정</h2>
             <div class="batch-control">
-                <label>일괄 적용:</label>
-                <input type="number" id="global-order" placeholder="순서" value="1">
-                <input type="number" id="global-insert" placeholder="삽입" value="1">
-                <button onclick="applyGlobal()" style="background:#555;">적용</button>
+                <span>⚡ 전체 문항수 일괄 적용:</span>
+                <input type="number" id="global-order" placeholder="순서배열" value="1" style="width:70px; margin:0;">
+                <input type="number" id="global-insert" placeholder="문장삽입" value="1" style="width:70px; margin:0;">
+                <button onclick="applyGlobal()" style="background: rgba(255,255,255,0.1); box-shadow:none;">적용</button>
             </div>
             
             <div class="passage-row header-row">
                 <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                <span>전체 선택</span>
-                <span style="text-align:right;">설정</span>
-                <span></span>
+                <span>전체 선택 및 지문 목록</span>
+                <span style="text-align:right;">유형별 문항 수</span>
+                <span style="text-align:center;">관리</span>
             </div>
-            <div id="passage-list">지문을 불러오는 중...</div>
-            <button onclick="generateIntegratedQuiz()" style="background-color: #2980b9; margin-top:20px;">문제지 생성</button>
+            <div id="passage-list">
+                <p style="text-align:center; padding:20px; color:#94a3b8;">서버에서 데이터를 불러오는 중입니다...</p>
+            </div>
+            <button onclick="generateIntegratedQuiz()" class="btn-create" style="margin-top:20px;">🚀 선택한 지문으로 문제지 생성</button>
         </div>
 
         <div id="quiz-output"></div>
-        <button id="pdf-btn" onclick="downloadPDF()" style="display: none; background-color: #e74c3c;">📄 PDF 다운로드</button>
+        <button id="pdf-btn" onclick="downloadPDF()" style="display: none; width:100%; margin-top:20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);">
+            📄 완성된 문제지 PDF 다운로드
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal">
+        <div class="card modal-box">
+            <h2>✏️ 저장된 지문 수정하기</h2>
+            <input type="hidden" id="edit-id">
+            <input type="text" id="edit-title" placeholder="지문 제목">
+            <textarea id="edit-content" rows="8" placeholder="문장을 로딩중입니다..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+                <button class="btn-save" id="edit-submit-btn" onclick="submitEdit()">수정 내용 덮어쓰기</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwBFLd5lHKqzivTlWGoQ1CIHMdMP-ayHRxVe_4mE1Nf1ZqSrB4pBNhH2r1KRRLjKGQ/exec";
+        // 자신의 GAS 웹앱 URL을 입력하세요.
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyjQ6DopBk58QykOjzFbbzn6ZuvY9QlBpaljbtqR_Y1lrCcx_QgYhksdq94B54kkpZp/exec";
 
         window.onload = async () => {
-            const res = await fetch(GAS_URL + "?action=list");
-            const list = await res.json();
-            const container = document.getElementById('passage-list');
-            container.innerHTML = "";
-            list.forEach(item => {
-                container.innerHTML += `
-                    <div class="passage-row">
-                        <input type="checkbox" class="chk-item" value="${item.id}">
-                        <span class="passage-title">${item.title}</span>
-                        <div class="input-group">
-                            <label>순서:</label><input type="number" class="order-cnt" value="1">
-                            <label>삽입:</label><input type="number" class="insert-cnt" value="1">
-                        </div>
-                        <button class="del-btn" onclick="deletePassage('${item.id}')">삭제</button>
-                    </div>`;
-            });
+            try {
+                const res = await fetch(GAS_URL + "?action=list");
+                const list = await res.json();
+                const container = document.getElementById('passage-list');
+                container.innerHTML = "";
+                
+                if(list.length === 0) {
+                    container.innerHTML = "<p style='text-align:center; color:#94a3b8; padding:20px;'>등록된 지문이 없습니다.</p>";
+                    return;
+                }
+
+                list.forEach(item => {
+                    container.innerHTML += `
+                        <div class="passage-row">
+                            <input type="checkbox" class="chk-item" value="${item.id}">
+                            <span class="passage-title" title="${item.title}">${item.title}</span>
+                            <div class="input-group">
+                                <label style="font-size:12px; color:#94a3b8;">순서</label>
+                                <input type="number" class="order-cnt" value="1" min="0">
+                                <label style="font-size:12px; color:#94a3b8; margin-left:5px;">삽입</label>
+                                <input type="number" class="insert-cnt" value="1" min="0">
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
+                                <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (err) {
+                document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#ef4444; padding:20px;'>서버 통신 오류가 발생했습니다.</p>";
+            }
         };
 
-        // 전체 선택/해제 기능 (Apps Script 연결 불필요)
         function toggleSelectAll() {
             const isChecked = document.getElementById('select-all').checked;
-            document.querySelectorAll('.chk-item').forEach(chk => {
-                chk.checked = isChecked;
-            });
-        }
-
-        async function deletePassage(id) {
-            if(!confirm("정말 삭제하시겠습니까?")) return;
-            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "delete", id: id }) });
-            location.reload();
+            document.querySelectorAll('.chk-item').forEach(chk => chk.checked = isChecked);
         }
 
         function applyGlobal() {
@@ -111,48 +210,106 @@
             const content = document.getElementById('content').value;
             const saveBtn = document.getElementById('save-btn');
             if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
-            saveBtn.innerText = "저장 중...";
+            
+            saveBtn.innerText = "업로드 중입니다...";
             saveBtn.disabled = true;
             try {
                 const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content }) });
                 const result = await res.json();
-                alert(result.message);
                 location.reload(); 
-            } catch (e) { alert("저장 실패"); } finally { saveBtn.innerText = "DB에 저장하기"; saveBtn.disabled = false; }
+            } catch (e) { alert("저장에 실패했습니다."); } finally { saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
+        }
+
+        async function deletePassage(id) {
+            if(!confirm("이 지문을 완전히 삭제하시겠습니까?")) return;
+            try {
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "delete", id: id }) });
+                location.reload();
+            } catch (e) { alert("삭제 오류"); }
+        }
+
+        // [신규] 수정 팝업 열기 로직
+        async function openEditModal(id) {
+            document.getElementById('edit-modal').style.display = 'flex';
+            document.getElementById('edit-title').value = "서버에서 불러오는 중...";
+            document.getElementById('edit-content').value = "잠시만 기다려주세요...";
+            document.getElementById('edit-id').value = id;
+
+            try {
+                const res = await fetch(GAS_URL + "?action=get_passage&id=" + id);
+                const data = await res.json();
+                if(data.error) throw new Error();
+                document.getElementById('edit-title').value = data.title;
+                document.getElementById('edit-content').value = data.content;
+            } catch(e) {
+                alert("지문 데이터를 불러오지 못했습니다.");
+                closeEditModal();
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+
+        // [신규] 수정한 데이터 서버에 저장
+        async function submitEdit() {
+            const id = document.getElementById('edit-id').value;
+            const title = document.getElementById('edit-title').value;
+            const content = document.getElementById('edit-content').value;
+            
+            if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
+            
+            const btn = document.getElementById('edit-submit-btn');
+            btn.innerText = "서버에 반영 중...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "update", id, title, content }) 
+                });
+                const result = await res.json();
+                location.reload();
+            } catch (e) {
+                alert("수정에 실패했습니다.");
+                btn.innerText = "수정 내용 덮어쓰기";
+                btn.disabled = false;
+            }
         }
 
         async function generateIntegratedQuiz() {
             const selected = [];
-            document.querySelectorAll('.chk-item:checked').forEach(chk => {
-                const row = chk.closest('.passage-row');
-                selected.push({ 
-                    id: chk.value, 
-                    order: row.querySelector('.order-cnt').value, 
-                    insert: row.querySelector('.insert-cnt').value 
+            document.querySelectorAll('.passage-row').forEach(row => {
+                const chk = row.querySelector('.chk-item');
+                if(chk && chk.checked) selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value });
+            });
+            if(selected.length === 0) return alert("출제할 지문을 체크박스로 선택해주세요.");
+
+            const quizDiv = document.getElementById('quiz-output');
+            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다... ⚙️</h3>";
+            quizDiv.style.display = "block";
+
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ action: "generate_batch", passages: selected }) 
                 });
-            });
-            if(selected.length === 0) return alert("지문을 선택해주세요.");
-
-            document.getElementById('quiz-output').innerHTML = "생성 중...";
-            document.getElementById('quiz-output').style.display = "block";
-
-            // 요청 시 헤더 설정 확인
-            const res = await fetch(GAS_URL, { 
-                method: "POST", 
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: "generate_batch", passages: selected }) 
-            });
-            const result = await res.json();
-            document.getElementById('quiz-output').innerHTML = result.html_content;
-            document.getElementById('pdf-btn').style.display = "block";
+                const result = await res.json();
+                quizDiv.innerHTML = result.html_content;
+                document.getElementById('pdf-btn').style.display = "block";
+            } catch(e) {
+                quizDiv.innerHTML = "<p style='color:red;'>오류가 발생했습니다.</p>";
+            }
         }
 
         function downloadPDF() {
             window.scrollTo(0, 0);
             html2pdf().set({ 
                 margin: 15, 
-                filename: '영어문제지.pdf', 
-                html2canvas: { scale: 2 }, 
+                filename: '영어_모의고사_변형문제.pdf', 
+                html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { format: 'a4' },
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).from(document.getElementById('quiz-output')).save();
