@@ -5,7 +5,7 @@
     <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* 기본 UI 디자인 유지 (다크 & 형광 테마) */
+        /* 기본 UI 디자인 유지 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { 
             font-family: 'Pretendard', sans-serif; 
@@ -234,12 +234,18 @@
             document.querySelectorAll('.chk-item').forEach(chk => chk.checked = isChecked);
         }
 
+        // [수정된 부분] 입력창이 있는 실제 지문 행에서만 값을 변경하도록 보호 코드(if문) 추가!
         function applyGlobal() {
             const order = document.getElementById('global-order').value;
             const insert = document.getElementById('global-insert').value;
             document.querySelectorAll('.passage-row').forEach(row => {
-                row.querySelector('.order-cnt').value = order;
-                row.querySelector('.insert-cnt').value = insert;
+                const orderInput = row.querySelector('.order-cnt');
+                const insertInput = row.querySelector('.insert-cnt');
+                // 헤더(제목 행)를 만나면 input이 없어서 null 에러가 나므로, 실제 input이 있을 때만 적용
+                if(orderInput && insertInput) {
+                    orderInput.value = order;
+                    insertInput.value = insert;
+                }
             });
         }
 
