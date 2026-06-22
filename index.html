@@ -58,9 +58,12 @@
         button:hover { transform: translateY(-2px); }
         .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
         
-        .batch-control { display: flex; gap: 10px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
+        /* 폴더 및 일괄 버튼 그룹 */
+        .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
+        .batch-group { display: flex; align-items: center; gap: 8px; }
+        
         .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; }
-        .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; }
+        .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px;}
         
         .passage-title { font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
         .opt-label { font-size: 13px; color: #a5f3fc; font-weight: bold; } 
@@ -81,7 +84,7 @@
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
 
         /* ========================================================
-           [완전 수정] 인쇄용 문제지 영역 - 1단(Single Column) 구조로 변경
+           인쇄용 문제지 영역 
            ======================================================== */
         #quiz-output { 
             padding: 40px; 
@@ -92,7 +95,7 @@
             margin-top: 30px;
             font-family: 'Batang', 'Malgun Gothic', serif; 
             width: 100%;
-            max-width: 800px; /* 너무 가로로 길어지지 않게 A4 비율에 맞춰 고정 */
+            max-width: 800px; 
             margin-left: auto;
             margin-right: auto;
             box-sizing: border-box;
@@ -108,37 +111,21 @@
             letter-spacing: 1.5px;
         }
 
-        /* 다단 속성 완전히 제거 */
-        .exam-paper {
-            display: block; 
-            width: 100%;
-        }
+        .exam-paper { display: block; width: 100%; }
 
         .q-box { 
-            display: block; 
-            width: 100%;
-            /* 문제 박스가 페이지 사이에 걸치면 아예 통째로 다음장으로 넘김 */
-            break-inside: avoid; 
-            page-break-inside: avoid;
-            
-            margin-bottom: 45px; /* 문제 사이의 간격을 넉넉하게 띄움 */
-            padding-bottom: 10px;
-            
-            font-size: 13.5px;   /* 마음에 드셨던 기존 폰트 크기 유지 */
-            line-height: 1.6; 
+            display: block; width: 100%;
+            break-inside: avoid; page-break-inside: avoid;
+            margin-bottom: 45px; padding-bottom: 10px;
+            font-size: 13.5px; line-height: 1.6; 
         }
 
         .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
         .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
         
         .box-content { 
-            border: 1px solid #000; 
-            padding: 12px 15px; 
-            margin: 15px 0; 
-            background: #fff; 
-            text-align: justify; 
-            font-size: 14px; 
-            font-weight: normal; 
+            border: 1px solid #000; padding: 12px 15px; margin: 15px 0; 
+            background: #fff; text-align: justify; font-size: 14px; font-weight: normal; 
         }
         .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
     </style>
@@ -147,6 +134,7 @@
     <div class="container">
         <div class="card">
             <h2>✨ 1. 새로운 지문 데이터 등록</h2>
+            <input type="text" id="folder" placeholder="폴더명 지정 (입력하지 않으면 '미분류'로 저장됩니다)" style="margin-bottom: 10px;">
             <input type="text" id="title" placeholder="지문 제목 (예: 24년 3월 고2 31번)">
             <textarea id="content" rows="4" placeholder="여기에 영어 문장을 줄바꿈으로 구분하여 입력하세요..."></textarea>
             <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
@@ -154,19 +142,31 @@
 
         <div class="card">
             <h2>🎯 2. 지문 관리 및 출제 설정</h2>
+            
             <div class="batch-control">
-                <span style="font-weight:bold; color:#a5f3fc;">⚡ 전체 문항수 일괄 적용:</span>
-                <input type="number" id="global-order" placeholder="순서배열" value="1" style="width:70px; margin:0;">
-                <input type="number" id="global-insert" placeholder="문장삽입" value="1" style="width:70px; margin:0;">
-                <button onclick="applyGlobal()" style="background: rgba(0, 242, 254, 0.2); color: #a5f3fc; border: 1px solid #00f2fe;">적용</button>
+                <div class="batch-group">
+                    <span style="font-weight:bold; color:#a5f3fc;">⚡ 전체 출제수 적용:</span>
+                    <input type="number" id="global-order" placeholder="순서배열" value="1" style="width:60px; margin:0;">
+                    <input type="number" id="global-insert" placeholder="문장삽입" value="1" style="width:60px; margin:0;">
+                    <button onclick="applyGlobal()" style="background: rgba(0, 242, 254, 0.2); color: #a5f3fc; border: 1px solid #00f2fe; padding:10px;">적용</button>
+                </div>
+                
+                <div style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 10px;"></div>
+                
+                <div class="batch-group">
+                    <span style="font-weight:bold; color:#a5f3fc;">📁 선택지문 폴더이동:</span>
+                    <input type="text" id="bulk-folder" placeholder="이동할 새 폴더명" style="width:140px; margin:0;">
+                    <button onclick="moveSelectedToFolder()" style="background: rgba(0, 242, 254, 0.2); color: #a5f3fc; border: 1px solid #00f2fe; padding:10px;">이동</button>
+                </div>
             </div>
             
             <div class="passage-row header-row">
                 <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                <span>전체 선택 및 지문 목록</span>
+                <span>전체 선택 (목록 일괄 선택)</span>
                 <span style="text-align:right;">유형별 문항 수</span>
                 <span style="text-align:center;">관리</span>
             </div>
+            
             <div id="passage-list">
                 <p style="text-align:center; padding:20px; color:#a5f3fc; font-weight:bold;">서버에서 데이터를 불러오는 중입니다...</p>
             </div>
@@ -183,6 +183,7 @@
         <div class="card modal-box">
             <h2>✏️ 저장된 지문 수정하기</h2>
             <input type="hidden" id="edit-id">
+            <input type="text" id="edit-folder" placeholder="폴더명">
             <input type="text" id="edit-title" placeholder="지문 제목">
             <textarea id="edit-content" rows="8" placeholder="문장을 로딩중입니다..."></textarea>
             <div class="modal-actions">
@@ -193,7 +194,8 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbw0CqHrnAoTe8NnfvvRuVMHuVoLPbMV-WP7T1p4FWzTkDXeeyhtvP9Rd3-a6nEJgoux/exec";
+        // 여러분의 GAS URL로 교체하세요.
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz4o2nmcauq70vA-A815nh9ElPKNN-P3oCeSKzLtH3e3YtpmTmhEGW3Zt8NQeOwoz3k/exec";
 
         window.onload = async () => {
             try {
@@ -207,23 +209,39 @@
                     return;
                 }
 
+                // 폴더별 그룹화 로직
+                const folders = {};
                 list.forEach(item => {
-                    container.innerHTML += `
-                        <div class="passage-row">
-                            <input type="checkbox" class="chk-item" value="${item.id}">
-                            <span class="passage-title" title="${item.title}">${item.title}</span>
-                            <div class="input-group">
-                                <label class="opt-label">순서</label>
-                                <input type="number" class="order-cnt" value="1" min="0">
-                                <label class="opt-label" style="margin-left:5px;">삽입</label>
-                                <input type="number" class="insert-cnt" value="1" min="0">
-                            </div>
-                            <div class="btn-group">
-                                <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
-                                <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
-                            </div>
-                        </div>`;
+                    const f = item.folder || "미분류";
+                    if(!folders[f]) folders[f] = [];
+                    folders[f].push(item);
                 });
+
+                // 폴더 제목과 그 하위 항목들을 렌더링
+                for (const [folderName, items] of Object.entries(folders)) {
+                    container.innerHTML += `
+                        <div style="background: rgba(0,0,0,0.4); padding: 10px 15px; margin-top: 15px; border-radius: 8px 8px 0 0; color: #6ee7b7; font-weight: bold; border: 1px solid rgba(0,242,254,0.1); border-bottom: none;">
+                            📂 ${folderName} <span style="font-size: 12px; color: #94a3b8;">(${items.length})</span>
+                        </div>
+                    `;
+                    items.forEach(item => {
+                        container.innerHTML += `
+                            <div class="passage-row" style="background: rgba(0,0,0,0.15); border-radius: 0;">
+                                <input type="checkbox" class="chk-item" value="${item.id}">
+                                <span class="passage-title" title="${item.title}">${item.title}</span>
+                                <div class="input-group">
+                                    <label class="opt-label">순서</label>
+                                    <input type="number" class="order-cnt" value="1" min="0">
+                                    <label class="opt-label" style="margin-left:5px;">삽입</label>
+                                    <input type="number" class="insert-cnt" value="1" min="0">
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
+                                    <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
+                                </div>
+                            </div>`;
+                    });
+                }
             } catch (err) {
                 document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#ffb199; padding:20px; font-weight:bold;'>서버 통신 오류가 발생했습니다.</p>";
             }
@@ -234,14 +252,12 @@
             document.querySelectorAll('.chk-item').forEach(chk => chk.checked = isChecked);
         }
 
-        // [수정된 부분] 입력창이 있는 실제 지문 행에서만 값을 변경하도록 보호 코드(if문) 추가!
         function applyGlobal() {
             const order = document.getElementById('global-order').value;
             const insert = document.getElementById('global-insert').value;
             document.querySelectorAll('.passage-row').forEach(row => {
                 const orderInput = row.querySelector('.order-cnt');
                 const insertInput = row.querySelector('.insert-cnt');
-                // 헤더(제목 행)를 만나면 input이 없어서 null 에러가 나므로, 실제 input이 있을 때만 적용
                 if(orderInput && insertInput) {
                     orderInput.value = order;
                     insertInput.value = insert;
@@ -249,16 +265,37 @@
             });
         }
 
+        // 체크된 지문을 새 폴더로 일괄 이동
+        async function moveSelectedToFolder() {
+            const folder = document.getElementById('bulk-folder').value.trim();
+            if (!folder) return alert("이동할 새 폴더명을 입력하세요.");
+            
+            const selected = [];
+            document.querySelectorAll('.chk-item:checked').forEach(chk => selected.push(chk.value));
+            
+            if(selected.length === 0) return alert("이동할 지문을 선택해주세요.");
+
+            try {
+                await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ action: "update_folder", ids: selected, folder: folder }) 
+                });
+                location.reload();
+            } catch (e) { alert("이동에 실패했습니다."); }
+        }
+
         async function saveToDB() {
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
-            const saveBtn = document.getElementById('save-btn');
+            const folder = document.getElementById('folder').value; // 폴더 수집
             if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
             
+            const saveBtn = document.getElementById('save-btn');
             saveBtn.innerText = "업로드 중입니다...";
             saveBtn.disabled = true;
             try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content }) });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content, folder }) });
                 location.reload(); 
             } catch (e) { alert("저장에 실패했습니다."); } finally { saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
         }
@@ -274,12 +311,14 @@
         async function openEditModal(id) {
             document.getElementById('edit-modal').style.display = 'flex';
             document.getElementById('edit-title').value = "로딩 중...";
+            document.getElementById('edit-folder').value = "";
             document.getElementById('edit-content').value = "";
             document.getElementById('edit-id').value = id;
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id);
                 const data = await res.json();
                 document.getElementById('edit-title').value = data.title;
+                document.getElementById('edit-folder').value = data.folder;
                 document.getElementById('edit-content').value = data.content;
             } catch(e) { closeEditModal(); }
         }
@@ -289,20 +328,21 @@
         async function submitEdit() {
             const id = document.getElementById('edit-id').value;
             const title = document.getElementById('edit-title').value;
+            const folder = document.getElementById('edit-folder').value;
             const content = document.getElementById('edit-content').value;
             if(!title || !content) return;
             document.getElementById('edit-submit-btn').disabled = true;
             try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content }) });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content, folder }) });
                 location.reload();
             } catch (e) { document.getElementById('edit-submit-btn').disabled = false; }
         }
 
         async function generateIntegratedQuiz() {
             const selected = [];
-            document.querySelectorAll('.passage-row').forEach(row => {
-                const chk = row.querySelector('.chk-item');
-                if(chk && chk.checked) selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value });
+            document.querySelectorAll('.chk-item:checked').forEach(chk => {
+                const row = chk.closest('.passage-row');
+                selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value });
             });
             if(selected.length === 0) return alert("출제할 지문을 체크박스로 선택해주세요.");
 
