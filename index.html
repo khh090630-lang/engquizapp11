@@ -5,20 +5,18 @@
     <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* 미래적인 UI 폰트 및 텍스트 형광 효과 설정 */
+        /* 기본 UI 디자인 유지 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { 
             font-family: 'Pretendard', sans-serif; 
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
             color: #e0f8ff; 
-            text-shadow: 0 0 8px rgba(0, 242, 254, 0.5); 
             padding: 40px 20px; 
             margin: 0;
             min-height: 100vh;
         }
         .container { max-width: 950px; margin: 0 auto; }
         
-        /* Glassmorphism 카드 디자인 */
         .card { 
             background: rgba(255, 255, 255, 0.05); 
             backdrop-filter: blur(16px);
@@ -27,7 +25,6 @@
             border-radius: 20px; 
             margin-bottom: 25px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 242, 254, 0.1); 
         }
         
         h2 { 
@@ -36,10 +33,8 @@
             background: linear-gradient(to right, #6ee7b7, #3b82f6); 
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: none; 
             border-bottom: 1px solid rgba(255,255,255,0.2); 
             padding-bottom: 15px; 
-            letter-spacing: -0.5px;
         }
 
         input[type="text"], input[type="number"], textarea {
@@ -47,107 +42,99 @@
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(0, 242, 254, 0.3);
             color: #e0f8ff; 
-            text-shadow: 0 0 5px rgba(0, 242, 254, 0.5); 
             padding: 12px;
             border-radius: 8px; margin-bottom: 15px;
             font-family: inherit; font-size: 15px; font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        input::placeholder, textarea::placeholder {
-            color: rgba(224, 248, 255, 0.4);
-            text-shadow: none; 
-            font-weight: normal;
         }
         input:focus, textarea:focus {
-            outline: none;
-            border-color: #00f2fe;
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
-            background: rgba(15, 23, 42, 0.8);
+            outline: none; border-color: #00f2fe; background: rgba(15, 23, 42, 0.8);
         }
 
         button { 
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white; border: none; padding: 12px 20px; border-radius: 8px; 
             cursor: pointer; font-size: 15px; font-weight: bold;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(0, 242, 254, 0.6); }
-        .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4); }
+        button:hover { transform: translateY(-2px); }
+        .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
         
         .batch-control { display: flex; gap: 10px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
-        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; transition: background 0.2s; }
-        .passage-row:hover { background: rgba(0,242,254,0.05); }
+        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; }
         
-        .passage-title { font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; letter-spacing: 0.5px;}
+        .passage-title { font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
         .opt-label { font-size: 13px; color: #a5f3fc; font-weight: bold; } 
         
         .input-group { display: flex; gap: 8px; justify-content: flex-end; align-items: center;}
         .input-group input { width: 50px; padding: 6px; margin: 0; text-align: center; }
         .btn-group { display: flex; gap: 6px; }
         .btn-sm { padding: 8px; font-size: 13px; border-radius: 6px; flex: 1;}
-        .btn-edit { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #333; text-shadow: none; box-shadow: 0 0 10px rgba(253,160,133,0.3); }
-        .btn-del { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); text-shadow: none; box-shadow: 0 0 10px rgba(240,147,251,0.3); }
+        .btn-edit { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #333; }
+        .btn-del { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
+            background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000;
         }
-        .modal-box { width: 100%; max-width: 600px; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-box { width: 100%; max-width: 600px; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
-        .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; box-shadow: none; }
-        .btn-cancel:hover { background: rgba(0, 242, 254, 0.1); }
+        .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
 
         /* ========================================================
-           [중요] 인쇄용 문제지 영역 (다단 편집 & 모의고사 포맷 적용) 
+           [수정] 인쇄용 문제지 영역 - Grid 레이아웃 & 폰트 최적화
            ======================================================== */
         #quiz-output { 
-            padding: 40px; background: white; color: black; 
+            padding: 30px; background: white; color: black; 
             border-radius: 12px; display: none; margin-top: 30px;
-            text-shadow: none; 
-            font-family: 'Batang', 'Malgun Gothic', serif; /* 실제 모의고사에 어울리는 바탕/명조 계열 */
+            font-family: 'Batang', 'Malgun Gothic', serif; 
         }
-        #quiz-output * { 
-            color: #000; 
-            text-shadow: none !important; 
-        }
+        #quiz-output * { color: #000; text-shadow: none !important; }
 
-        /* 2단 분할 포맷 (실제 시험지 스타일) */
+        /* column-count 대신 CSS Grid를 사용하여 문제를 좌/우로 확실하게 분배합니다. 
+           이렇게 하면 문제 박스가 반으로 쪼개지거나 어긋나지 않습니다.
+        */
         .exam-paper {
-            column-count: 2; /* 2단 나누기 */
-            column-gap: 40px; /* 단 사이 간격 */
-            column-rule: 1px solid #ccc; /* 가운데 구분선 */
-            text-align: justify;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 좌우 50% 분할 */
+            gap: 20px 40px; /* 세로 간격 20px, 가로(단) 간격 40px */
+            border-right: 1px solid #ccc; /* 가운데 선 느낌을 위해 우측 테두리 */
+            padding-right: 20px;
+            /* 그리드의 가운데 선 꼼수: 왼쪽 열의 우측에만 선을 그음. 아래 nth-child로 처리 */
+        }
+        
+        .exam-paper > div:nth-child(odd) {
+            padding-right: 20px;
+            border-right: 1px solid #ccc; /* 홀수(왼쪽단) 문제 오른쪽에만 실선 */
+        }
+        .exam-paper > div:nth-child(even) {
+            padding-left: 0;
+            border-right: none;
         }
 
         .q-box { 
-            border: none; /* 기존 전체 박스 테두리 제거 */
+            border: none; 
             padding: 0; 
-            margin-bottom: 45px; /* 문제 간 넉넉한 간격 */
-            break-inside: avoid; /* 문제 도중에 잘리지 않게 방지 */
-            page-break-inside: avoid; 
-            background: transparent;
-            font-size: 13.5px; /* 실제 시험지와 비슷한 작은 글씨 크기 */
-            line-height: 1.6;
+            margin-bottom: 20px; 
+            break-inside: avoid; /* PDF 출력 시 페이지 내에서 잘림 방지 */
+            page-break-inside: avoid;
+            /* 글씨 크기를 대폭 줄임 */
+            font-size: 11.5px; 
+            line-height: 1.45;
         }
 
-        .q-title { font-weight: bold; font-size: 15px; display: block; margin-bottom: 5px; color: #000; }
-        .q-direction { margin: 0 0 12px 0; font-size: 13.5px;}
+        .q-title { font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #000; }
+        .q-direction { margin: 0 0 8px 0; font-size: 11.5px;}
         
         .box-content { 
-            border: 1.5px solid #000; /* 주어진 문장 박스는 테두리 유지 */
-            padding: 12px 15px; 
-            margin: 12px 0; 
+            border: 1px solid #000; 
+            padding: 8px 10px; 
+            margin: 8px 0; 
             background: transparent; 
             text-align: left; 
-            font-size: 14px; 
+            font-size: 12px; 
             font-weight: normal; 
         }
-        .q-text { text-align: justify; margin-top: 10px; }
+        .q-text { text-align: justify; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -165,7 +152,7 @@
                 <span style="font-weight:bold; color:#a5f3fc;">⚡ 전체 문항수 일괄 적용:</span>
                 <input type="number" id="global-order" placeholder="순서배열" value="1" style="width:70px; margin:0;">
                 <input type="number" id="global-insert" placeholder="문장삽입" value="1" style="width:70px; margin:0;">
-                <button onclick="applyGlobal()" style="background: rgba(0, 242, 254, 0.2); box-shadow:none; color: #a5f3fc; border: 1px solid #00f2fe;">적용</button>
+                <button onclick="applyGlobal()" style="background: rgba(0, 242, 254, 0.2); color: #a5f3fc; border: 1px solid #00f2fe;">적용</button>
             </div>
             
             <div class="passage-row header-row">
@@ -181,7 +168,7 @@
         </div>
 
         <div id="quiz-output"></div>
-        <button id="pdf-btn" onclick="downloadPDF()" style="display: none; width:100%; margin-top:20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);">
+        <button id="pdf-btn" onclick="downloadPDF()" style="display: none; width:100%; margin-top:20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border:none; color:white;">
             📄 완성된 문제지 PDF 다운로드
         </button>
     </div>
@@ -200,7 +187,6 @@
     </div>
 
     <script>
-        // 자신의 GAS 웹앱 URL을 입력하세요.
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw0CqHrnAoTe8NnfvvRuVMHuVoLPbMV-WP7T1p4FWzTkDXeeyhtvP9Rd3-a6nEJgoux/exec";
 
         window.onload = async () => {
@@ -260,8 +246,7 @@
             saveBtn.innerText = "업로드 중입니다...";
             saveBtn.disabled = true;
             try {
-                const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content }) });
-                const result = await res.json();
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content }) });
                 location.reload(); 
             } catch (e) { alert("저장에 실패했습니다."); } finally { saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
         }
@@ -276,50 +261,29 @@
 
         async function openEditModal(id) {
             document.getElementById('edit-modal').style.display = 'flex';
-            document.getElementById('edit-title').value = "서버에서 불러오는 중...";
-            document.getElementById('edit-content').value = "잠시만 기다려주세요...";
+            document.getElementById('edit-title').value = "로딩 중...";
+            document.getElementById('edit-content').value = "";
             document.getElementById('edit-id').value = id;
-
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id);
                 const data = await res.json();
-                if(data.error) throw new Error();
                 document.getElementById('edit-title').value = data.title;
                 document.getElementById('edit-content').value = data.content;
-            } catch(e) {
-                alert("지문 데이터를 불러오지 못했습니다.");
-                closeEditModal();
-            }
+            } catch(e) { closeEditModal(); }
         }
 
-        function closeEditModal() {
-            document.getElementById('edit-modal').style.display = 'none';
-        }
+        function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
         async function submitEdit() {
             const id = document.getElementById('edit-id').value;
             const title = document.getElementById('edit-title').value;
             const content = document.getElementById('edit-content').value;
-            
-            if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
-            
-            const btn = document.getElementById('edit-submit-btn');
-            btn.innerText = "서버에 반영 중...";
-            btn.disabled = true;
-
+            if(!title || !content) return;
+            document.getElementById('edit-submit-btn').disabled = true;
             try {
-                const res = await fetch(GAS_URL, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: "update", id, title, content }) 
-                });
-                const result = await res.json();
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content }) });
                 location.reload();
-            } catch (e) {
-                alert("수정에 실패했습니다.");
-                btn.innerText = "수정 내용 덮어쓰기";
-                btn.disabled = false;
-            }
+            } catch (e) { document.getElementById('edit-submit-btn').disabled = false; }
         }
 
         async function generateIntegratedQuiz() {
@@ -351,7 +315,7 @@
         function downloadPDF() {
             window.scrollTo(0, 0);
             html2pdf().set({ 
-                margin: [15, 15, 15, 15], 
+                margin: [15, 10, 15, 10], // 여백 축소
                 filename: '영어_모의고사_변형문제.pdf', 
                 html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { format: 'a4', orientation: 'portrait' },
