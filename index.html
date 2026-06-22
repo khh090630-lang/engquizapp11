@@ -5,7 +5,7 @@
     <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* 기본 UI 디자인 유지 */
+        /* 미래적인 대시보드 UI 디자인 스타일 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { 
             font-family: 'Pretendard', sans-serif; 
@@ -25,6 +25,7 @@
             border-radius: 20px; 
             margin-bottom: 25px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 242, 254, 0.1); 
         }
         
         h2 { 
@@ -33,8 +34,10 @@
             background: linear-gradient(to right, #6ee7b7, #3b82f6); 
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: none; 
             border-bottom: 1px solid rgba(255,255,255,0.2); 
             padding-bottom: 15px; 
+            letter-spacing: -0.5px;
         }
 
         input[type="text"], input[type="number"], textarea {
@@ -42,105 +45,117 @@
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(0, 242, 254, 0.3);
             color: #e0f8ff; 
+            text-shadow: 0 0 5px rgba(0, 242, 254, 0.5); 
             padding: 12px;
             border-radius: 8px; margin-bottom: 15px;
             font-family: inherit; font-size: 15px; font-weight: bold;
+            transition: all 0.3s ease;
         }
         input:focus, textarea:focus {
-            outline: none; border-color: #00f2fe; background: rgba(15, 23, 42, 0.8);
+            outline: none;
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
+            background: rgba(15, 23, 42, 0.8);
         }
 
         button { 
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white; border: none; padding: 12px 20px; border-radius: 8px; 
             cursor: pointer; font-size: 15px; font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
         }
-        button:hover { transform: translateY(-2px); }
-        .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(0, 242, 254, 0.6); }
+        .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4); }
         
         .batch-control { display: flex; gap: 10px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
-        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; }
+        .passage-row { display: grid; grid-template-columns: 30px 1fr 130px 60px; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 10px; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; }
         
-        .passage-title { font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+        .passage-title { font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; letter-spacing: 0.5px;}
         .opt-label { font-size: 13px; color: #a5f3fc; font-weight: bold; } 
         
         .input-group { display: flex; gap: 8px; justify-content: flex-end; align-items: center;}
         .input-group input { width: 50px; padding: 6px; margin: 0; text-align: center; }
         .btn-group { display: flex; gap: 6px; }
         .btn-sm { padding: 8px; font-size: 13px; border-radius: 6px; flex: 1;}
-        .btn-edit { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #333; }
-        .btn-del { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
+        .btn-edit { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #333; text-shadow: none; }
+        .btn-del { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); text-shadow: none; }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
         }
         .modal-box { width: 100%; max-width: 600px; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
 
         /* ========================================================
-           [수정] 인쇄용 문제지 영역 - Grid 레이아웃 & 폰트 최적화
+           [중요] 인쇄용 문제지 영역 - 실전 모의고사 2단 레이아웃 완전 통제
            ======================================================== */
         #quiz-output { 
-            padding: 30px; background: white; color: black; 
-            border-radius: 12px; display: none; margin-top: 30px;
+            padding: 40px 50px; 
+            background: white; 
+            color: black; 
+            border-radius: 12px; 
+            display: none; 
+            margin-top: 30px;
+            text-shadow: none; 
             font-family: 'Batang', 'Malgun Gothic', serif; 
+            width: 100%;
+            box-sizing: border-box;
         }
-        #quiz-output * { color: #000; text-shadow: none !important; }
+        #quiz-output * { 
+            color: #000; 
+            text-shadow: none !important; 
+            box-sizing: border-box;
+        }
 
-        /* column-count 대신 CSS Grid를 사용하여 문제를 좌/우로 확실하게 분배합니다. 
-           이렇게 하면 문제 박스가 반으로 쪼개지거나 어긋나지 않습니다.
-        */
+        /* 신문/시험지 형태의 정밀 다단 레이아웃 */
         .exam-paper {
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* 좌우 50% 분할 */
-            gap: 20px 40px; /* 세로 간격 20px, 가로(단) 간격 40px */
-            border-right: 1px solid #ccc; /* 가운데 선 느낌을 위해 우측 테두리 */
-            padding-right: 20px;
-            /* 그리드의 가운데 선 꼼수: 왼쪽 열의 우측에만 선을 그음. 아래 nth-child로 처리 */
-        }
-        
-        .exam-paper > div:nth-child(odd) {
-            padding-right: 20px;
-            border-right: 1px solid #ccc; /* 홀수(왼쪽단) 문제 오른쪽에만 실선 */
-        }
-        .exam-paper > div:nth-child(even) {
-            padding-left: 0;
-            border-right: none;
+            column-count: 2;            /* 정확히 좌우 2단으로 고정 */
+            column-gap: 50px;           /* 왼쪽단과 오른쪽단 사이의 넓은 여백 */
+            column-rule: 1px solid #bbb; /* 중앙을 가르는 깔끔한 시험지 실선 */
+            column-fill: auto;          /* 내용이 왼쪽을 다 채워야 오른쪽으로 넘어가게 설정 */
+            width: 100%;
         }
 
         .q-box { 
-            border: none; 
-            padding: 0; 
-            margin-bottom: 20px; 
-            break-inside: avoid; /* PDF 출력 시 페이지 내에서 잘림 방지 */
-            page-break-inside: avoid;
-            /* 글씨 크기를 대폭 줄임 */
-            font-size: 11.5px; 
-            line-height: 1.45;
+            display: block;
+            width: 100%;
+            /* 핵심: 이전 문제가 언제 끝나든, 새 문제는 무조건 다음 칸(단)의 첫머리에서 시작 */
+            break-before: column; 
+            -webkit-column-break-before: always; 
+            break-inside: auto;        /* 만약 지문이 너무 길면 우측 단이나 다음 페이지로 자연스럽게 연속 연결 */
+            page-break-inside: auto;
+            margin-bottom: 0;
+            padding-bottom: 25px;
+            font-size: 11px;            /* 실제 시험지처럼 글자 크기 대폭 축소 */
+            line-height: 1.5;           /* 자간 및 가독성 최적화 */
         }
 
-        .q-title { font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #000; }
-        .q-direction { margin: 0 0 8px 0; font-size: 11.5px;}
+        .q-title { font-weight: bold; font-size: 12.5px; display: block; margin-bottom: 4px; color: #000; }
+        .q-direction { margin: 0 0 8px 0; font-size: 11px; color: #222; }
         
+        /* [네모 박스] 주어진 글 / 삽입 문장 스타일 */
         .box-content { 
             border: 1px solid #000; 
-            padding: 8px 10px; 
+            padding: 8px 12px; 
             margin: 8px 0; 
-            background: transparent; 
+            background: #fff; 
             text-align: left; 
-            font-size: 12px; 
+            font-size: 11px; 
             font-weight: normal; 
         }
-        .q-text { text-align: justify; margin-top: 8px; }
+        .q-text { text-align: justify; margin-top: 8px; word-break: break-word; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h2>✨ 1. 새로운 지문 데이터 등록</h2>
+            <h2>✨ 1. 新 지문 데이터 등록</h2>
             <input type="text" id="title" placeholder="지문 제목 (예: 24년 3월 고2 31번)">
             <textarea id="content" rows="4" placeholder="여기에 영어 문장을 줄바꿈으로 구분하여 입력하세요..."></textarea>
             <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
@@ -187,7 +202,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbw0CqHrnAoTe8NnfvvRuVMHuVoLPbMV-WP7T1p4FWzTkDXeeyhtvP9Rd3-a6nEJgoux/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzyw9b4x6WdweTdues9-Lg8phnf-Z0U8GGTQB3NHlH8OpAajCDJaMtLGFKVcFkkyBac/exec";
 
         window.onload = async () => {
             try {
@@ -205,7 +220,7 @@
                     container.innerHTML += `
                         <div class="passage-row">
                             <input type="checkbox" class="chk-item" value="${item.id}">
-                            <span class="passage-title" title="${item.title}">${item.title}</span>
+                            <span class="passage-title">${item.title}</span>
                             <div class="input-group">
                                 <label class="opt-label">순서</label>
                                 <input type="number" class="order-cnt" value="1" min="0">
@@ -288,9 +303,9 @@
 
         async function generateIntegratedQuiz() {
             const selected = [];
-            document.querySelectorAll('.passage-row').forEach(row => {
-                const chk = row.querySelector('.chk-item');
-                if(chk && chk.checked) selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value });
+            document.querySelectorAll('.chk-item:checked').forEach(chk => {
+                const row = chk.closest('.passage-row');
+                selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value });
             });
             if(selected.length === 0) return alert("출제할 지문을 체크박스로 선택해주세요.");
 
@@ -305,7 +320,9 @@
                     body: JSON.stringify({ action: "generate_batch", passages: selected }) 
                 });
                 const result = await res.json();
-                quizDiv.innerHTML = result.html_content;
+                
+                // 다단 포맷(.exam-paper) 클래스로 묶어서 출력 처리
+                quizDiv.innerHTML = `<div class="exam-paper">${result.html_content}</div>`;
                 document.getElementById('pdf-btn').style.display = "block";
             } catch(e) {
                 quizDiv.innerHTML = "<p style='color:red;'>오류가 발생했습니다.</p>";
@@ -315,11 +332,11 @@
         function downloadPDF() {
             window.scrollTo(0, 0);
             html2pdf().set({ 
-                margin: [15, 10, 15, 10], // 여백 축소
-                filename: '영어_모의고사_변형문제.pdf', 
+                margin: [15, 12, 15, 12], 
+                filename: '영어_변형문제지.pdf', 
                 html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                pagebreak: { mode: ['css', 'legacy'] }
             }).from(document.getElementById('quiz-output')).save();
         }
     </script>
