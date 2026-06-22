@@ -33,10 +33,11 @@
         h2 { 
             margin-top: 0;
             font-weight: 800;
-            background: linear-gradient(to right, #00f2fe, #4facfe);
+            /* 번짐 효과(filter) 제거, 그라데이션 색상을 더 밝게 조정 */
+            background: linear-gradient(to right, #6ee7b7, #3b82f6); 
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 8px rgba(0,242,254,0.6)); /* 그라데이션 텍스트용 형광 효과 */
+            text-shadow: none; /* 형광 번짐 완전 제거 */
             border-bottom: 1px solid rgba(255,255,255,0.2); 
             padding-bottom: 15px; 
             letter-spacing: -0.5px;
