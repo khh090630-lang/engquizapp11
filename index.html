@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -64,6 +65,8 @@
         
         .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
         .batch-group { display: flex; align-items: center; gap: 8px; }
+        
+        /* 그리드 레이아웃 */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px; }
         
@@ -85,9 +88,7 @@
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
 
-        /* ========================================================
-           폴더 아코디언(접기/펴기) 관련 스타일
-           ======================================================== */
+        /* 폴더 아코디언 관련 스타일 */
         .folder-header {
             background: rgba(0,0,0,0.4); 
             padding: 12px 15px; 
@@ -103,21 +104,12 @@
             align-items: center;
             transition: background 0.2s ease;
         }
-        .folder-header:hover {
-            background: rgba(0, 0, 0, 0.6);
-        }
-        .folder-content {
-            display: block; 
-        }
-        .toggle-icon {
-            font-size: 12px;
-            transition: transform 0.3s ease;
-        }
-        .folder-header.collapsed .toggle-icon {
-            transform: rotate(-90deg); 
-        }
+        .folder-header:hover { background: rgba(0, 0, 0, 0.6); }
+        .folder-content { display: block; }
+        .toggle-icon { font-size: 12px; transition: transform 0.3s ease; }
+        .folder-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
-        /* 인쇄용 문제지 1단(Single Column) 구조 유지 */
+        /* 인쇄용 문제지 구조 */
         #quiz-output { 
             padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px;
             font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box;
@@ -130,6 +122,52 @@
         .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
         .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
         .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
+
+        /* ========================================================
+           [신규 추가] 모바일 반응형(Responsive) CSS
+           ======================================================== */
+        @media screen and (max-width: 768px) {
+            body { padding: 15px 10px; }
+            .card { padding: 20px 15px; margin-bottom: 15px; }
+            h2 { font-size: 18px; }
+            
+            /* 버튼과 인풋 그룹 모바일 정렬 */
+            .batch-control { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; }
+            .batch-group { flex-wrap: wrap; justify-content: space-between; width: 100%; }
+            .batch-group input[type="number"], .batch-group select { flex: 1; min-width: 60px; margin-bottom: 5px !important; }
+            .batch-group button { width: 100%; margin-top: 5px; }
+            .divider-line { display: none; } /* 모바일에서는 구분선 숨김 */
+
+            /* 모바일에서 불필요한 헤더 숨김 */
+            .hide-on-mobile { display: none !important; }
+
+            /* 지문 목록 (Grid -> Flex Column으로 변경하여 세로 배치) */
+            .passage-row {
+                grid-template-columns: 30px 1fr; 
+                gap: 10px;
+                padding: 12px;
+            }
+            .passage-title {
+                white-space: normal; /* 모바일에서는 긴 제목이 줄바꿈 되도록 설정 */
+                word-break: break-word;
+                font-size: 14px;
+            }
+            .input-group {
+                grid-column: 1 / 3; /* 2칸 꽉 채움 */
+                justify-content: flex-start;
+                background: rgba(0, 0, 0, 0.2);
+                padding: 10px;
+                border-radius: 8px;
+            }
+            .btn-group {
+                grid-column: 1 / 3;
+                width: 100%;
+            }
+            .btn-sm { padding: 10px; font-size: 14px; } /* 터치하기 쉽게 크기 확대 */
+
+            /* 모달창 크기 */
+            .modal-box { width: 95%; padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -140,7 +178,7 @@
                 <select id="folder" style="margin-bottom: 0; flex: 1;">
                     <option value="미분류">미분류</option>
                 </select>
-                <button class="btn-outline" onclick="createNewFolder()" style="width: 120px;">+ 새 폴더</button>
+                <button class="btn-outline" onclick="createNewFolder()" style="width: 120px; padding: 10px;">+ 새 폴더</button>
             </div>
             
             <input type="text" id="title" placeholder="지문 제목 (예: 24년 3월 고2 31번)">
@@ -153,17 +191,17 @@
             
             <div class="batch-control">
                 <div class="batch-group">
-                    <span style="font-weight:bold; color:#a5f3fc;">⚡ 출제수 일괄 적용:</span>
-                    <input type="number" id="global-order" placeholder="순서" value="1" style="width:50px; margin:0;">
-                    <input type="number" id="global-insert" placeholder="삽입" value="1" style="width:50px; margin:0;">
+                    <span style="font-weight:bold; color:#a5f3fc; width: 100%;">⚡ 전체 출제수 적용:</span>
+                    <input type="number" id="global-order" placeholder="순서" value="1" style="margin:0;">
+                    <input type="number" id="global-insert" placeholder="삽입" value="1" style="margin:0;">
                     <button class="btn-outline" onclick="applyGlobal()" style="padding:10px;">적용</button>
                 </div>
                 
-                <div style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 5px;"></div>
+                <div class="divider-line" style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 5px;"></div>
                 
                 <div class="batch-group">
-                    <span style="font-weight:bold; color:#a5f3fc;">📁 선택지문 폴더이동:</span>
-                    <select id="bulk-folder" style="width: 140px; margin:0;">
+                    <span style="font-weight:bold; color:#a5f3fc; width: 100%;">📁 선택지문 폴더이동:</span>
+                    <select id="bulk-folder" style="margin:0; flex:1;">
                         <option value="미분류">미분류</option>
                     </select>
                     <button class="btn-outline" onclick="moveSelectedToFolder()" style="padding:10px;">이동</button>
@@ -172,9 +210,9 @@
             
             <div class="passage-row header-row" style="margin-top:0;">
                 <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                <span>전체 선택 (아래 전체 적용)</span>
-                <span style="text-align:right;">유형별 문항 수</span>
-                <span style="text-align:center;">관리</span>
+                <span>전체 선택 (목록 일괄 선택)</span>
+                <span class="hide-on-mobile" style="text-align:right;">유형별 문항 수</span>
+                <span class="hide-on-mobile" style="text-align:center;">관리</span>
             </div>
             
             <div id="passage-list">
@@ -198,7 +236,7 @@
                 <select id="edit-folder" style="margin-bottom: 0; flex: 1;">
                     <option value="미분류">미분류</option>
                 </select>
-                <button class="btn-outline" onclick="createNewFolder()" style="width: 120px;">+ 새 폴더</button>
+                <button class="btn-outline" onclick="createNewFolder()" style="width: 120px; padding: 10px;">+ 새 폴더</button>
             </div>
             
             <input type="text" id="edit-title" placeholder="지문 제목">
@@ -283,7 +321,6 @@
             }
         };
 
-        // 폴더 펼치기/접기 토글 함수
         function toggleFolder(headerId, contentId) {
             const header = document.getElementById(headerId);
             const content = document.getElementById(contentId);
@@ -296,9 +333,8 @@
             }
         }
 
-        // [신규] 폴더별 전체 선택/해제 함수
         function toggleFolderSelectAll(event, checkbox) {
-            event.stopPropagation(); // 폴더 아코디언이 접히는 것을 방지
+            event.stopPropagation(); 
             const contentId = checkbox.getAttribute('data-target');
             const contentDiv = document.getElementById(contentId);
             const checkboxes = contentDiv.querySelectorAll('.chk-item');
@@ -334,9 +370,7 @@
 
         function toggleSelectAll() {
             const isChecked = document.getElementById('select-all').checked;
-            // 모든 지문 체크박스 동기화
             document.querySelectorAll('.chk-item').forEach(chk => chk.checked = isChecked);
-            // 모든 폴더 그룹 체크박스도 시각적으로 동기화
             document.querySelectorAll('.folder-select-all').forEach(chk => chk.checked = isChecked);
         }
 
