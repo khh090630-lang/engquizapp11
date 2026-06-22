@@ -5,7 +5,7 @@
     <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* 대시보드 UI 테마 스타일 유지 */
+        /* 기본 UI 디자인 유지 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { 
             font-family: 'Pretendard', sans-serif; 
@@ -59,10 +59,10 @@
         .btn-create { width: 100%; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
         
         .batch-control { display: flex; gap: 10px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
-        .passage-row { display: grid; grid-template-columns: 30px 1fr 130px 60px; align-items: center; padding: 12px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 10px; }
+        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; }
         
-        .passage-title { font-size: 14px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+        .passage-title { font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
         .opt-label { font-size: 13px; color: #a5f3fc; font-weight: bold; } 
         
         .input-group { display: flex; gap: 8px; justify-content: flex-end; align-items: center;}
@@ -81,10 +81,10 @@
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
 
         /* ========================================================
-           [수정] 인쇄용 문제지 영역 - 시험지 규격 다단 정밀 제어 
+           [완전 수정] 인쇄용 문제지 영역 - A4 비율 및 다단 정밀 제어 
            ======================================================== */
         #quiz-output { 
-            padding: 40px 50px; 
+            padding: 40px; 
             background: white; 
             color: black; 
             border-radius: 12px; 
@@ -92,49 +92,47 @@
             margin-top: 30px;
             font-family: 'Batang', 'Malgun Gothic', serif; 
             width: 100%;
+            max-width: 800px; /* 치우침 방지: A4 크기에 맞게 중앙 정렬 */
+            margin-left: auto;
+            margin-right: auto;
             box-sizing: border-box;
         }
         #quiz-output * { color: #000; text-shadow: none !important; box-sizing: border-box; }
 
-        /* 모의고사용 완전 분할 다단 구성 */
+        /* 모의고사용 좌우 2단 구성 */
         .exam-paper {
-            column-count: 2;            /* 정확히 2단 배정 */
-            column-gap: 50px;           /* 왼쪽과 오른쪽 영역 구분 여백 */
-            column-rule: 1px solid #bbb; /* 좌우 가르는 기준선 */
-            column-fill: auto;          /* 지문 오버플로우 흐름 대응 */
+            column-count: 2;            
+            column-gap: 40px;           /* 왼쪽과 오른쪽 사이 여백 */
+            column-rule: 1px solid #777; /* 좌우 가르는 기준선 */
             width: 100%;
         }
 
         .q-box { 
-            display: block;
+            /* inline-block을 주면 단(column) 안에서 내용이 위아래로 쪼개지는 것을 확실히 막음 */
+            display: inline-block; 
             width: 100%;
-            /* 지문이 비정상적으로 길어 넘치면 우측 단이나 다음 장 좌측 단으로 자연스럽게 유동 연결 */
-            break-inside: auto; 
-            page-break-inside: auto;
+            break-inside: avoid; 
+            page-break-inside: avoid;
+            -webkit-column-break-inside: avoid;
             
-            /* 핵심: 앞 문제 길이가 어떻든 새로운 문제는 무조건 다음 단(또는 다음 페이지 왼쪽) 상단 배치 */
-            break-after: column;
-            -webkit-column-break-after: always;
-            
-            margin-bottom: 0;
-            padding-bottom: 25px;
-            font-size: 10.5px;          /* 가독성이 훼손되지 않는 모의고사 실전용 폰트 축소 */
-            line-height: 1.4;           /* 컴팩트한 줄 간격 */
+            margin-bottom: 35px; /* 문제 간격 */
+            font-size: 10.5px;   /* 실전 모의고사 수준 폰트 축소 */
+            line-height: 1.5; 
         }
 
-        .q-title { font-weight: bold; font-size: 12px; display: block; margin-bottom: 4px; color: #000; }
-        .q-direction { margin: 0 0 8px 0; font-size: 10.5px; color: #111; }
+        .q-title { font-weight: bold; font-size: 12px; display: block; margin-bottom: 6px; color: #000; }
+        .q-direction { margin: 0 0 10px 0; font-size: 10.5px; color: #111; }
         
         .box-content { 
             border: 1px solid #000; 
-            padding: 6px 10px; 
-            margin: 6px 0; 
+            padding: 10px 12px; 
+            margin: 10px 0; 
             background: #fff; 
-            text-align: left; 
+            text-align: justify; 
             font-size: 11px; 
             font-weight: normal; 
         }
-        .q-text { text-align: justify; margin-top: 8px; word-break: break-word; }
+        .q-text { text-align: justify; margin-top: 8px; word-break: keep-all; }
     </style>
 </head>
 <body>
@@ -305,9 +303,7 @@
                     body: JSON.stringify({ action: "generate_batch", passages: selected }) 
                 });
                 const result = await res.json();
-                
-                // 생성된 결과물을 시험지 레이아웃(.exam-paper) 내부로 편입
-                quizDiv.innerHTML = `<div class="exam-paper">${result.html_content}</div>`;
+                quizDiv.innerHTML = result.html_content;
                 document.getElementById('pdf-btn').style.display = "block";
             } catch(e) {
                 quizDiv.innerHTML = "<p style='color:red;'>오류가 발생했습니다.</p>";
@@ -317,11 +313,11 @@
         function downloadPDF() {
             window.scrollTo(0, 0);
             html2pdf().set({ 
-                margin: [15, 12, 15, 12], 
+                margin: [15, 10, 15, 10], 
                 filename: '영어_모의고사_변형문제.pdf', 
                 html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] }
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).from(document.getElementById('quiz-output')).save();
         }
     </script>
