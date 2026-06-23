@@ -80,10 +80,7 @@
             cursor: pointer; 
             transition: color 0.2s ease;
         }
-        .passage-title:hover {
-            color: #00f2fe;
-            text-decoration: underline;
-        }
+        .passage-title:hover { color: #00f2fe; text-decoration: underline; }
 
         .opt-label { font-size: 13px; color: #a5f3fc; font-weight: bold; } 
         
@@ -123,21 +120,35 @@
         .toggle-icon { font-size: 12px; transition: transform 0.3s ease; }
         .folder-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
-        /* 인쇄용 문제지 구조 */
+        /* ========================================================
+           [핵심 수정] PDF 페이지 밀림(Creeping up) 버그 완벽 차단 CSS
+           ======================================================== */
         #quiz-output { 
             padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px;
             font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box;
         }
         #quiz-output * { color: #000; text-shadow: none !important; box-sizing: border-box; }
-        .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-top: 0; margin-bottom: 30px; letter-spacing: 1.5px; }
+        
+        .main-title { text-align: center; font-size: 22px; font-weight: 800; margin: 0 0 30px 0; letter-spacing: 1.5px; line-height: 30px; }
         .exam-paper { display: block; width: 100%; }
-        .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; margin-bottom: 45px; padding-bottom: 10px; font-size: 13.5px; line-height: 1.6; }
-        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
-        .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
-        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
 
-        /* 반응형 스타일 */
+        /* 모든 요소의 여백(Margin)을 아래쪽으로만(margin-bottom) 일방통행 시키고,
+           소수점 픽셀 대신 정수(14px, 24px)로 딱 떨어지게 만들어 렌더링 오차 누적을 방지합니다. */
+        .q-box { 
+            display: block; width: 100%; 
+            break-inside: avoid; page-break-inside: avoid; 
+            margin: 0 0 45px 0; 
+            font-size: 14px; line-height: 24px; 
+        }
+        .q-title { font-weight: bold; font-size: 15px; display: block; margin: 0 0 6px 0; color: #000; line-height: 24px; }
+        .q-direction { margin: 0 0 10px 0; font-size: 14px; color: #111; line-height: 24px; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 0 0 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; line-height: 24px; }
+        .q-text { text-align: justify; margin: 0; word-break: keep-all; line-height: 24px; }
+        
+        /* 해설 부분 p 태그 마진도 오차 없이 정수로 고정 */
+        #quiz-output p { margin: 0 0 10px 0; line-height: 24px; }
+
+        /* 반응형 (모바일) 설정 */
         @media screen and (max-width: 820px) {
             body { padding: 15px 10px; }
             .card { padding: 20px 15px; margin-bottom: 15px; }
@@ -249,7 +260,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw39M87aqUxLEArYg9yvcKfU_IAvfyB08ZHIM4k2hyQ5CrcU_kSHi0f_19CBM08SQ4c/exec";
         
         let globalFolders = new Set(["미분류"]);
 
@@ -336,9 +347,7 @@
             }
         }
 
-        function closeViewModal() {
-            document.getElementById('view-modal').style.display = 'none';
-        }
+        function closeViewModal() { document.getElementById('view-modal').style.display = 'none'; }
 
         function toggleFolder(headerId, contentId) {
             const header = document.getElementById(headerId);
@@ -409,10 +418,8 @@
         async function moveSelectedToFolder() {
             const folder = document.getElementById('bulk-folder').value;
             if (!folder) return alert("이동할 폴더를 선택하세요.");
-            
             const selected = [];
             document.querySelectorAll('.chk-item:checked').forEach(chk => selected.push(chk.value));
-            
             if(selected.length === 0) return alert("이동할 지문을 선택해주세요.");
 
             try {
@@ -496,19 +503,21 @@
             const quizDiv = document.getElementById('quiz-output');
             quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다... ⚙️</h3>";
             quizDiv.style.display = "block";
-            
-            // 사용자가 입력한 커스텀 메인 타이틀 가져오기
-            const mainTitle = document.getElementById('custom-main-title').value;
 
             try {
                 const res = await fetch(GAS_URL, { 
                     method: "POST", 
                     headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: "generate_batch", passages: selected, mainTitle: mainTitle }) 
+                    body: JSON.stringify({ action: "generate_batch", passages: selected }) 
                 });
                 const result = await res.json();
                 
-                quizDiv.innerHTML = result.html_content;
+                // 프론트엔드 단에서 마진 겹침 방지 처리
+                let htmlOutput = result.html_content
+                    .replace("margin-top: 50px;", "padding-top: 50px;")
+                    .replace("margin-bottom: 20px;", "margin: 0 0 20px 0; line-height: 30px;");
+                    
+                quizDiv.innerHTML = htmlOutput;
                 document.getElementById('pdf-btn').style.display = "block";
             } catch(e) {
                 quizDiv.innerHTML = "<p style='color:red;'>오류가 발생했습니다.</p>";
@@ -517,17 +526,17 @@
 
         function downloadPDF() {
             window.scrollTo(0, 0);
-            
-            // 입력된 타이틀 기반으로 PDF 파일명 설정
             let titleInput = document.getElementById('custom-main-title').value.trim();
             let fileName = titleInput ? titleInput + '.pdf' : '영어_지문_변형_문제.pdf';
             
             html2pdf().set({ 
                 margin: [15, 15, 15, 15], 
                 filename: fileName, 
-                html2canvas: { scale: 2, useCORS: true }, 
+                // html2canvas 옵션 강화: scrollY 초기화 및 화질 최적화
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: document.getElementById('quiz-output').scrollWidth }, 
                 jsPDF: { format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] }
+                // avoid-all 속성을 더해 블록 요소가 잘리는 것을 적극 방어
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             }).from(document.getElementById('quiz-output')).save();
         }
     </script>
