@@ -68,7 +68,9 @@
         
         .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
         .batch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); }
+        
+        /* 기본 그리드는 관리자 버튼(110px)을 숨김 처리한 3칸 구조 */
+        .passage-row { display: grid; grid-template-columns: 30px 1fr 140px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px; }
         
         .passage-title { 
@@ -123,7 +125,6 @@
         .toggle-icon { font-size: 12px; transition: transform 0.3s ease; }
         .folder-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
-        /* 인쇄용 문제지 구조 */
         #quiz-output { 
             padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px;
             font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box;
@@ -137,6 +138,36 @@
         .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
         .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
 
+        /* ========================================================
+           [신규 추가] 관리자 보안 숨김 CSS
+           ======================================================== */
+        /* 기본적으로 admin-only 요소는 모두 숨김 */
+        .admin-only { display: none !important; }
+        
+        /* 관리자 모드 활성화 시 각 요소의 원래 형태로 노출 */
+        body.admin-mode .admin-only-block { display: block !important; }
+        body.admin-mode div.admin-only-flex { display: flex !important; }
+        body.admin-mode span.admin-only-inline { display: inline-block !important; }
+        body.admin-mode .passage-row { grid-template-columns: 30px 1fr 140px 110px; } /* 관리자 버튼 들어갈 자리 확보 */
+
+        /* 숨겨진 톱니바퀴 버튼 */
+        .admin-trigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            opacity: 0.05; /* 평소엔 거의 안 보임 */
+            cursor: pointer;
+            z-index: 9999;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .admin-trigger:hover {
+            opacity: 0.8; /* 마우스 올리면 선명해짐 */
+            transform: rotate(90deg);
+        }
+
         /* 반응형 스타일 */
         @media screen and (max-width: 820px) {
             body { padding: 15px 10px; }
@@ -149,7 +180,7 @@
             .batch-group button { flex: 1; }
             .divider-line { display: none; } 
             .hide-on-mobile { display: none !important; }
-            .passage-row { grid-template-columns: 30px 1fr; gap: 10px; padding: 12px; }
+            .passage-row, body.admin-mode .passage-row { grid-template-columns: 30px 1fr; gap: 10px; padding: 12px; }
             .passage-title { white-space: normal; word-break: break-word; font-size: 14px; }
             .input-group { grid-column: 1 / 3; justify-content: flex-start; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; }
             .btn-group { grid-column: 1 / 3; width: 100%; }
@@ -160,7 +191,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="card">
+        <div class="card admin-only admin-only-block">
             <h2>✨ 1. 새로운 지문 데이터 등록</h2>
             <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
                 <select id="folder" style="margin-bottom: 0; flex: 1; min-width: 120px;">
@@ -175,7 +206,7 @@
         </div>
 
         <div class="card">
-            <h2>🎯 2. 지문 관리 및 출제 설정</h2>
+            <h2>🎯 지문 목록 및 문제지 출력</h2>
             
             <div class="batch-control">
                 <div class="batch-group">
@@ -185,9 +216,9 @@
                     <button class="btn-outline" onclick="applyGlobal()">적용</button>
                 </div>
                 
-                <div class="divider-line" style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 5px;"></div>
+                <div class="divider-line admin-only admin-only-block" style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 5px;"></div>
                 
-                <div class="batch-group">
+                <div class="batch-group admin-only admin-only-flex">
                     <span style="font-weight:bold; color:#a5f3fc;">📁 선택지문 폴더이동:</span>
                     <select id="bulk-folder">
                         <option value="미분류">미분류</option>
@@ -200,7 +231,7 @@
                 <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
                 <span>전체 선택 (목록 일괄 선택)</span>
                 <span class="hide-on-mobile" style="text-align:right;">유형별 문항 수</span>
-                <span class="hide-on-mobile" style="text-align:center;">관리</span>
+                <span class="hide-on-mobile admin-only admin-only-inline" style="text-align:center;">관리</span>
             </div>
             
             <div id="passage-list">
@@ -216,6 +247,8 @@
             📄 완성된 문제지 PDF 다운로드
         </button>
     </div>
+
+    <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
 
     <div class="modal-overlay" id="edit-modal">
         <div class="card modal-box">
@@ -251,8 +284,28 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
         
+        // [보안] 설정할 비밀번호 입력 (여기서 수정하세요)
+        const ADMIN_PASSWORD = "admin";
+        let isAdmin = false;
+
         let globalFolders = new Set(["미분류"]);
-        window.folderItems = {}; // [신규] 폴더 내 지문 ID들을 추적하기 위한 전역 객체
+        window.folderItems = {}; 
+
+        // [신규] 관리자 모드 토글 함수
+        function toggleAdminMode() {
+            if (isAdmin) {
+                alert("이미 관리자 모드 상태입니다.");
+                return;
+            }
+            const pwd = prompt("관리자 비밀번호를 입력하세요:");
+            if (pwd === ADMIN_PASSWORD) {
+                isAdmin = true;
+                document.body.classList.add('admin-mode');
+                alert("관리자 모드가 활성화되었습니다. 지문 등록, 수정, 삭제가 가능합니다.");
+            } else if (pwd !== null) {
+                alert("비밀번호가 일치하지 않습니다.");
+            }
+        }
 
         window.onload = async () => {
             try {
@@ -275,7 +328,7 @@
                     folders[f].push(item);
                 });
                 
-                window.folderItems = folders; // 렌더링 시점에 저장
+                window.folderItems = folders; 
                 updateFolderDropdowns();
 
                 let htmlStr = "";
@@ -290,7 +343,7 @@
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <input type="checkbox" class="folder-select-all" data-target="${contentId}" onclick="toggleFolderSelectAll(event, this)" style="width:auto; margin:0; cursor:pointer;" title="이 폴더의 모든 지문 선택">
                                 <span>📂 ${folderName} <span style="font-size: 12px; color: #94a3b8;">(${items.length})</span></span>
-                                ${folderName !== '미분류' ? `<span onclick="renameFolder(event, '${folderName}')" style="cursor:pointer; font-size:14px; margin-left:5px;" title="폴더 이름 수정">✏️</span>` : ''}
+                                ${folderName !== '미분류' ? `<span class="admin-only admin-only-inline" onclick="renameFolder(event, '${folderName}')" style="cursor:pointer; font-size:14px; margin-left:5px;" title="폴더 이름 수정">✏️</span>` : ''}
                             </div>
                             <span class="toggle-icon">▼</span>
                         </div>
@@ -308,7 +361,7 @@
                                     <label class="opt-label" style="margin-left:5px;">삽입</label>
                                     <input type="number" class="insert-cnt" value="1" min="0">
                                 </div>
-                                <div class="btn-group">
+                                <div class="btn-group admin-only admin-only-flex">
                                     <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
                                     <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
                                 </div>
@@ -324,9 +377,8 @@
             }
         };
 
-        // [신규] 폴더 이름 수정 함수
         async function renameFolder(event, oldFolderName) {
-            event.stopPropagation(); // 폴더 토글(접기/펴기) 방지
+            event.stopPropagation(); 
             
             if (oldFolderName === "미분류") {
                 alert("'미분류' 폴더의 이름은 수정할 수 없습니다.");
@@ -338,13 +390,10 @@
 
             const cleanName = newName.trim();
             const items = window.folderItems[oldFolderName];
-            
             if (!items || items.length === 0) return;
 
-            // 해당 폴더에 있는 모든 지문의 ID 추출
             const idsToUpdate = items.map(item => item.id);
 
-            // 기존의 update_folder 로직을 재활용하여 일괄 변경 처리
             try {
                 await fetch(GAS_URL, { 
                     method: "POST", 
