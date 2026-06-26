@@ -252,6 +252,7 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
         
         let globalFolders = new Set(["미분류"]);
+        window.folderItems = {}; // [신규] 폴더 내 지문 ID들을 추적하기 위한 전역 객체
 
         window.onload = async () => {
             try {
@@ -274,6 +275,7 @@
                     folders[f].push(item);
                 });
                 
+                window.folderItems = folders; // 렌더링 시점에 저장
                 updateFolderDropdowns();
 
                 let htmlStr = "";
@@ -286,8 +288,9 @@
                     htmlStr += `
                         <div id="${headerId}" class="folder-header" onclick="toggleFolder('${headerId}', '${contentId}')">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" class="folder-select-all" data-target="${contentId}" onclick="toggleFolderSelectAll(event, this)" style="width:auto; margin:0; cursor:pointer;">
+                                <input type="checkbox" class="folder-select-all" data-target="${contentId}" onclick="toggleFolderSelectAll(event, this)" style="width:auto; margin:0; cursor:pointer;" title="이 폴더의 모든 지문 선택">
                                 <span>📂 ${folderName} <span style="font-size: 12px; color: #94a3b8;">(${items.length})</span></span>
+                                ${folderName !== '미분류' ? `<span onclick="renameFolder(event, '${folderName}')" style="cursor:pointer; font-size:14px; margin-left:5px;" title="폴더 이름 수정">✏️</span>` : ''}
                             </div>
                             <span class="toggle-icon">▼</span>
                         </div>
@@ -320,6 +323,37 @@
                 document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#ffb199; padding:20px; font-weight:bold;'>서버 통신 오류가 발생했습니다.</p>";
             }
         };
+
+        // [신규] 폴더 이름 수정 함수
+        async function renameFolder(event, oldFolderName) {
+            event.stopPropagation(); // 폴더 토글(접기/펴기) 방지
+            
+            if (oldFolderName === "미분류") {
+                alert("'미분류' 폴더의 이름은 수정할 수 없습니다.");
+                return;
+            }
+
+            const newName = prompt(`'${oldFolderName}' 폴더의 새 이름을 입력하세요:`, oldFolderName);
+            if (!newName || newName.trim() === "" || newName.trim() === oldFolderName) return;
+
+            const cleanName = newName.trim();
+            const items = window.folderItems[oldFolderName];
+            
+            if (!items || items.length === 0) return;
+
+            // 해당 폴더에 있는 모든 지문의 ID 추출
+            const idsToUpdate = items.map(item => item.id);
+
+            // 기존의 update_folder 로직을 재활용하여 일괄 변경 처리
+            try {
+                await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ action: "update_folder", ids: idsToUpdate, folder: cleanName }) 
+                });
+                location.reload();
+            } catch (e) { alert("폴더 이름 수정에 실패했습니다."); }
+        }
 
         async function openViewModal(id) {
             document.getElementById('view-modal').style.display = 'flex';
@@ -497,7 +531,6 @@
             quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다... ⚙️</h3>";
             quizDiv.style.display = "block";
             
-            // 사용자가 입력한 커스텀 메인 타이틀 가져오기
             const mainTitle = document.getElementById('custom-main-title').value;
 
             try {
@@ -518,7 +551,6 @@
         function downloadPDF() {
             window.scrollTo(0, 0);
             
-            // 입력된 타이틀 기반으로 PDF 파일명 설정
             let titleInput = document.getElementById('custom-main-title').value.trim();
             let fileName = titleInput ? titleInput + '.pdf' : '영어_지문_변형_문제.pdf';
             
