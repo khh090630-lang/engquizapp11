@@ -124,9 +124,14 @@
         .toggle-icon { font-size: 12px; transition: transform 0.3s ease; }
         .folder-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
+        /* ========================================================
+           [수정] 인쇄용 문제지 구조 - 쏠림 방지를 위해 margin 제거
+           ======================================================== */
         #quiz-output { 
             padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px;
-            font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box;
+            font-family: 'Batang', 'Malgun Gothic', serif; 
+            width: 100%; 
+            box-sizing: border-box;
         }
         #quiz-output * { color: #000; text-shadow: none !important; box-sizing: border-box; }
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-top: 0; margin-bottom: 30px; letter-spacing: 1.5px; }
@@ -134,8 +139,10 @@
         .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; margin-bottom: 45px; padding-bottom: 10px; font-size: 13.5px; line-height: 1.6; }
         .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
         .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
-        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
+        
+        /* 영어 단어가 삐져나가지 않도록 overflow-wrap 적용 */
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; overflow-wrap: break-word; word-break: keep-all; }
+        .q-text { text-align: justify; margin-top: 10px; overflow-wrap: break-word; word-break: keep-all; }
 
         /* 관리자 보안 숨김 CSS */
         .admin-only { display: none !important; }
@@ -267,7 +274,6 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
         
-        // 관리자 비밀번호
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
 
@@ -575,43 +581,20 @@
             }
         }
 
-        /* ========================================================
-           [수정 부분] 백지 출력 및 텍스트 쏠림 해결 방어 코드
-           ======================================================== */
+        /* [핵심 수정] 자바스크립트 폭 강제 조절 제거, 안전한 캡처 방식 사용 */
         function downloadPDF() {
-            // 스크롤이 내려가 있으면 화면 밖을 캡처하므로 무조건 최상단으로 강제 이동
-            window.scrollTo(0, 0);
-            
-            const element = document.getElementById('quiz-output');
-            
-            // 모바일/태블릿 화면 크기에 영향받지 않도록 캡처 순간에만 너비 강제 고정
-            const originalWidth = element.style.width;
-            const originalMaxWidth = element.style.maxWidth;
-            element.style.width = '800px';
-            element.style.maxWidth = '800px';
+            window.scrollTo(0, 0); // 백지 방지: 스크롤 최상단 고정
             
             let titleInput = document.getElementById('custom-main-title').value.trim();
             let fileName = titleInput ? titleInput + '.pdf' : '영어_지문_변형_문제.pdf';
             
-            const opt = { 
-                margin: [15, 10, 15, 10], 
+            html2pdf().set({ 
+                margin: [15, 15, 15, 15], 
                 filename: fileName, 
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
-                    scrollY: 0, // 백지 방지 핵심 옵션
-                    windowWidth: 800 // 잘림 방지 핵심 옵션
-                }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 }, // 불필요한 windowWidth 삭제
+                jsPDF: { format: 'a4', orientation: 'portrait' },
                 pagebreak: { mode: ['css', 'legacy'] }
-            };
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                // PDF 저장이 끝나면 화면을 원상복구
-                element.style.width = originalWidth;
-                element.style.maxWidth = originalMaxWidth;
-            });
+            }).from(document.getElementById('quiz-output')).save();
         }
     </script>
 </body>
