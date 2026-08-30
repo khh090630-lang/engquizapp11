@@ -113,7 +113,6 @@
         <!-- 등록 구역 -->
         <div class="card admin-only admin-only-block">
             <h2>✨ 1. 새로운 지문 데이터 등록</h2>
-            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">해석본을 비워두면, 서술형 문제 출제 시 AI가 자동으로 번역하여 저장합니다.</p>
             <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
                 <select id="folder" style="margin-bottom: 0; flex: 1; min-width: 120px;">
                     <option value="미분류">미분류</option>
@@ -179,10 +178,8 @@
         </button>
     </div>
 
-    <!-- 숨겨진 관리자 모드 버튼 -->
     <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
 
-    <!-- 수정 모달 -->
     <div class="modal-overlay" id="edit-modal">
         <div class="card modal-box" style="max-width: 800px;">
             <h2>✏️ 저장된 지문 수정하기</h2>
@@ -500,7 +497,12 @@
             const input = btn.previousElementSibling;
             const userAnswer = input.value.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
             let rawAnswer = "";
-            try { rawAnswer = decodeURIComponent(escape(atob(input.getAttribute('data-answer')))); } catch(e) { rawAnswer = atob(input.getAttribute('data-answer')); }
+            try { 
+                // 웹 안전 Base64를 일반 Base64로 호환 디코딩
+                rawAnswer = decodeURIComponent(escape(atob(input.getAttribute('data-answer').replace(/-/g, '+').replace(/_/g, '/')))); 
+            } catch(e) { 
+                rawAnswer = atob(input.getAttribute('data-answer').replace(/-/g, '+').replace(/_/g, '/')); 
+            }
             const correctAnswer = rawAnswer.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
             let mark = input.parentElement.querySelector('.result-mark');
             if(!mark) { mark = document.createElement('span'); mark.className = 'result-mark'; input.parentElement.appendChild(mark); }
@@ -512,7 +514,6 @@
             }
         }
 
-        // [복원] 서술형 문항의 모든 변수(desc1, desc2, desc3)를 안전하게 서버로 넘기도록 완벽 복구
         async function generateIntegratedQuiz() {
             const selected = [];
             
@@ -549,6 +550,7 @@
                 });
                 const result = await res.json();
                 
+                // 에러 처리 추가: 만약 서버에서 에러가 났다면 백지가 아니라 에러 메시지를 띄움
                 if (result.status === "error") {
                      quizDiv.innerHTML = `<p style='color:red;'>서버 오류: ${result.message}</p>`;
                      return;
