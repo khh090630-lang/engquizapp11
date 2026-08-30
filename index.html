@@ -26,7 +26,7 @@
         .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
         .batch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
-        /* 5개 인풋을 담기 위해 그리드 너비 조정 */
+        /* 문항 칸 조절 */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 250px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); transition: transform 0.2s ease; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px; }
         
@@ -63,23 +63,22 @@
 
         /* [웹 채점용 UI 디자인] */
         .interactive-input { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; background: #f1f5f9; padding: 12px; border-radius: 8px; }
-        .input-row { display: flex; gap: 8px; width: 100%; }
-        .interactive-input input { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; flex: 1; padding: 10px; margin: 0; font-family: inherit; font-size: 14px; font-weight: normal; }
-        .interactive-input button { background: #2563eb; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; border:none;}
-        .result-mark { font-weight: bold; font-size: 14px; margin-top: 5px; display: block; }
+        .interactive-input input { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; padding: 10px; box-sizing: border-box; font-family: inherit; font-size: 14px; font-weight: normal; }
+        .interactive-input button { background: #2563eb; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; border:none; width: 120px; align-self: flex-end;}
+        .result-mark { font-weight: bold; font-size: 14px; margin-top: 5px; display: block; text-align: right; }
 
         /* [프린트 전용 스타일] PDF 렌더링 시 채점 버튼은 가리고 입력칸은 줄눈으로 바꿈 */
         @media print {
             .interactive-input { background: transparent !important; padding: 0 !important; border: none !important; }
-            .input-row button, .result-mark { display: none !important; }
+            .interactive-input button, .result-mark { display: none !important; }
             .interactive-input input { border: none !important; border-bottom: 1px solid #333 !important; background: transparent !important; color: transparent !important; border-radius: 0 !important; padding: 5px 0 !important; margin-top: 15px !important; }
             .interactive-input input::placeholder { color: transparent !important; }
         }
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
-        body.admin-mode div.admin-only-flex { display: flex !important; }
-        body.admin-mode span.admin-only-inline { display: inline-block !important; }
+        body.admin-mode .admin-only-flex { display: flex !important; }
+        body.admin-mode .admin-only-inline { display: inline-block !important; }
         body.admin-mode .passage-row { grid-template-columns: 30px 1fr 250px 110px 40px; }
         body.admin-mode .header-row { grid-template-columns: 30px 1fr 250px 110px 40px; }
 
@@ -97,19 +96,17 @@
             .batch-group span { width: 100%; display: block; margin-bottom: 5px; } 
             .batch-group input[type="number"], .batch-group select { flex: 1; margin: 0 !important; min-width: 60px; }
             .batch-group button { flex: 1; }
-            .divider-line { display: none; } 
-            .hide-on-mobile { display: none !important; }
-            
+            .divider-line, .hide-on-mobile { display: none !important; }
             .passage-row, body.admin-mode .passage-row { grid-template-columns: 30px 1fr 30px; gap: 10px; padding: 12px; }
             .passage-title { white-space: normal; word-break: break-word; font-size: 14px; grid-column: 2 / 3; }
             .input-group { grid-column: 1 / 4; justify-content: flex-start; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; flex-wrap: wrap;}
+            .input-group input { width: 45px;}
             body.admin-mode .input-group { grid-column: 1 / 4; }
             .btn-group { grid-column: 1 / 4; width: 100%; }
             body.admin-mode .btn-group { grid-column: 1 / 4; }
             .btn-sm { padding: 10px; font-size: 14px; } 
             .move-btn-group { grid-column: 3 / 4; grid-row: 1 / 2; }
             .modal-box { width: 95%; padding: 20px; }
-            .input-row { flex-direction: column; }
         }
     </style>
 </head>
@@ -130,7 +127,7 @@
             
             <div class="flex-row">
                 <textarea id="content" class="flex-1" rows="5" placeholder="영어 지문 입력 (엔터로 문장 구분)"></textarea>
-                <textarea id="translation" class="flex-1" rows="5" placeholder="한국어 해석 입력 (영어 문장과 동일한 줄에, 생략 시 자동 생성)"></textarea>
+                <textarea id="translation" class="flex-1" rows="5" placeholder="한국어 해석 입력 (생략 시 자동 생성)"></textarea>
             </div>
 
             <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
@@ -142,7 +139,6 @@
             <div class="batch-control">
                 <div class="batch-group" style="width:100%; justify-content: flex-start;">
                     <span style="font-weight:bold; color:#a5f3fc;">⚡ 문항수 일괄 적용:</span>
-                    <!-- [수정] 모호했던 서술1,2,3 텍스트를 명확하게 변경 -->
                     <input type="number" id="global-order" placeholder="순서" value="1" title="순서 배열">
                     <input type="number" id="global-insert" placeholder="삽입" value="1" title="문장 삽입">
                     <input type="number" id="global-desc1" placeholder="단어배열" value="0" title="서술형: 단어 배열">
@@ -166,14 +162,14 @@
             
             <div class="passage-row header-row" style="margin-top:0;">
                 <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                <span>전체 선택 (목록 일괄 선택)</span>
+                <span>전체 선택 (목록)</span>
                 <span class="hide-on-mobile" style="text-align:right; font-size:12px;">[순서/삽입/단어배열/어형변형/통문장]</span>
                 <span class="hide-on-mobile admin-only admin-only-inline" style="text-align:center;">관리</span>
                 <span class="hide-on-mobile admin-only admin-only-inline" style="text-align:center;">이동</span>
             </div>
             
             <div id="passage-list">
-                <p style="text-align:center; padding:20px; color:#a5f3fc; font-weight:bold;">서버에서 데이터를 불러오는 중입니다...</p>
+                <p style="text-align:center; padding:20px; color:#a5f3fc; font-weight:bold;">서버 대기 중...</p>
             </div>
             
             <input type="text" id="custom-main-title" placeholder="출력될 문제지 제목 (미입력 시 '영어 지문 변형 문제')" style="margin-top: 25px; margin-bottom: 10px;">
@@ -189,14 +185,12 @@
     <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
 
     <div class="modal-overlay" id="edit-modal">
-        <div class="card modal-box">
+        <div class="card modal-box" style="max-width: 800px;">
             <h2>✏️ 저장된 지문 수정하기</h2>
             <input type="hidden" id="edit-id">
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                <select id="edit-folder" style="margin-bottom: 0; flex: 1; min-width: 120px;">
-                    <option value="미분류">미분류</option>
-                </select>
+                <select id="edit-folder" style="margin-bottom: 0; flex: 1; min-width: 120px;"></select>
                 <button class="btn-outline" onclick="createNewFolder()" style="width: auto;">+ 새 폴더</button>
             </div>
             
@@ -223,11 +217,11 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
+        // 자신의 웹 앱 URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw053Q9gYo8v8dbUJK0O1ej1VJKjMTh9dpp5rlN0MdYcm6qRDXOonIOfB5hiTdvWNA5/exec";
         
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
-
         let globalFolders = new Set(["미분류"]);
         window.folderItems = {}; 
 
@@ -257,7 +251,6 @@
                 isAdmin = true;
                 document.body.classList.add('admin-mode');
             }
-
             try {
                 const res = await fetch(GAS_URL + "?action=list");
                 const list = await res.json();
@@ -265,9 +258,8 @@
                 container.innerHTML = "";
                 
                 if(list.length === 0) {
-                    container.innerHTML = "<p style='text-align:center; color:#a5f3fc; padding:20px; font-weight:bold;'>등록된 지문이 없습니다.</p>";
-                    updateFolderDropdowns();
-                    return;
+                    container.innerHTML = "<p style='text-align:center;'>등록된 지문이 없습니다.</p>";
+                    updateFolderDropdowns(); return;
                 }
 
                 const folders = {};
@@ -291,36 +283,33 @@
                     htmlStr += `
                         <div id="${headerId}" class="folder-header" onclick="toggleFolder('${headerId}', '${contentId}')">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" class="folder-select-all" data-target="${contentId}" onclick="toggleFolderSelectAll(event, this)" style="width:auto; margin:0; cursor:pointer;" title="이 폴더의 모든 지문 선택">
+                                <input type="checkbox" class="folder-select-all" data-target="${contentId}" onclick="toggleFolderSelectAll(event, this)">
                                 <span>📂 ${folderName} <span style="font-size: 12px; color: #94a3b8;">(${items.length})</span></span>
-                                ${folderName !== '미분류' ? `<span class="admin-only admin-only-inline" onclick="renameFolder(event, '${folderName}')" style="cursor:pointer; font-size:14px; margin-left:5px;" title="폴더 이름 수정">✏️</span>` : ''}
+                                ${folderName !== '미분류' ? `<span class="admin-only admin-only-inline" onclick="renameFolder(event, '${folderName}')" style="cursor:pointer; margin-left:5px;">✏️</span>` : ''}
                             </div>
                             <span class="toggle-icon">▼</span>
                         </div>
                         <div id="${contentId}" class="folder-content">
                     `;
-                    
                     items.forEach(item => {
                         htmlStr += `
-                            <div class="passage-row" style="background: rgba(0,0,0,0.15); border-radius: 0;" data-id="${item.id}">
+                            <div class="passage-row" data-id="${item.id}">
                                 <input type="checkbox" class="chk-item" value="${item.id}">
-                                <span class="passage-title" title="클릭하여 원문 보기" onclick="openViewModal('${item.id}')">${item.title}</span>
-                                
-                                <!-- [수정] 백엔드와 완벽하게 연결되는 5개의 서술형 문항칸 -->
+                                <span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span>
                                 <div class="input-group">
-                                    <input type="number" class="order-cnt" value="1" min="0" title="순서 배열">
-                                    <input type="number" class="insert-cnt" value="1" min="0" title="문장 삽입">
-                                    <input type="number" class="desc1-cnt" value="0" min="0" title="단어 배열">
-                                    <input type="number" class="desc2-cnt" value="0" min="0" title="어형 변형">
-                                    <input type="number" class="desc3-cnt" value="0" min="0" title="통문장 영작">
+                                    <input type="number" class="order-cnt" value="1" min="0" title="순서배열">
+                                    <input type="number" class="insert-cnt" value="1" min="0" title="문장삽입">
+                                    <input type="number" class="desc1-cnt" value="0" min="0" title="서술형1(단어배열)">
+                                    <input type="number" class="desc2-cnt" value="0" min="0" title="서술형2(어형변형)">
+                                    <input type="number" class="desc3-cnt" value="0" min="0" title="서술형3(영작)">
                                 </div>
                                 <div class="btn-group admin-only admin-only-flex">
                                     <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
                                     <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
                                 </div>
                                 <div class="move-btn-group admin-only admin-only-flex">
-                                    <button class="btn-move" onclick="moveRow(this, -1)" title="위로 이동">▲</button>
-                                    <button class="btn-move" onclick="moveRow(this, 1)" title="아래로 이동">▼</button>
+                                    <button class="btn-move" onclick="moveRow(this, -1)">▲</button>
+                                    <button class="btn-move" onclick="moveRow(this, 1)">▼</button>
                                 </div>
                             </div>`;
                     });
@@ -328,22 +317,16 @@
                     folderIndex++;
                 }
                 container.innerHTML = htmlStr;
-                
             } catch (err) {
-                document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#ffb199; padding:20px; font-weight:bold;'>서버 통신 오류가 발생했습니다.</p>";
+                document.getElementById('passage-list').innerHTML = "<p style='color:#ffb199;'>서버 통신 오류가 발생했습니다.</p>";
             }
         };
 
         function moveRow(btn, direction) {
             const row = btn.closest('.passage-row');
             const parent = row.parentNode;
-            
-            if (direction === -1 && row.previousElementSibling) {
-                parent.insertBefore(row, row.previousElementSibling);
-            } else if (direction === 1 && row.nextElementSibling) {
-                parent.insertBefore(row.nextElementSibling, row);
-            }
-            
+            if (direction === -1 && row.previousElementSibling) parent.insertBefore(row, row.previousElementSibling);
+            else if (direction === 1 && row.nextElementSibling) parent.insertBefore(row.nextElementSibling, row);
             row.style.background = 'rgba(0, 242, 254, 0.2)';
             setTimeout(() => { row.style.background = 'rgba(0,0,0,0.15)'; }, 300);
         }
@@ -354,66 +337,37 @@
                 const id = row.getAttribute('data-id');
                 if (id) orderedIds.push(id);
             });
-
-            if (orderedIds.length === 0) return alert("저장할 지문 목록이 없습니다.");
-
+            if (orderedIds.length === 0) return;
             const saveBtn = document.getElementById('save-order-btn');
-            saveBtn.innerText = "순서 저장 중...";
             saveBtn.disabled = true;
-
             try {
-                const res = await fetch(GAS_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: "reorder_passages", orderedIds: orderedIds })
-                });
-                const result = await res.json();
-                alert(result.message || "순서가 구글 시트에 정상 고정되었습니다!");
-                location.reload();
-            } catch(e) {
-                alert("순서 저장 중 서버 통신 오류가 발생했습니다.");
-            } finally {
-                saveBtn.innerText = "📁 현재 순서 DB에 고정";
-                saveBtn.disabled = false;
-            }
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "reorder_passages", orderedIds: orderedIds }) });
+                alert("순서가 고정되었습니다!"); location.reload();
+            } catch(e) { alert("저장 오류"); }
         }
 
         async function renameFolder(event, oldFolderName) {
             event.stopPropagation(); 
-            
-            if (oldFolderName === "미분류") {
-                alert("'미분류' 폴더의 이름은 수정할 수 없습니다.");
-                return;
-            }
-
-            const newName = prompt(`'${oldFolderName}' 폴더의 새 이름을 입력하세요:`, oldFolderName);
+            if (oldFolderName === "미분류") return alert("수정 불가");
+            const newName = prompt(`새 이름을 입력하세요:`, oldFolderName);
             if (!newName || newName.trim() === "" || newName.trim() === oldFolderName) return;
-
-            const cleanName = newName.trim();
             const items = window.folderItems[oldFolderName];
-            if (!items || items.length === 0) return;
-
+            if (!items) return;
             const idsToUpdate = items.map(item => item.id);
-
             try {
-                await fetch(GAS_URL, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: "update_folder", ids: idsToUpdate, folder: cleanName }) 
-                });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update_folder", ids: idsToUpdate, folder: newName.trim() }) });
                 location.reload();
-            } catch (e) { alert("폴더 이름 수정에 실패했습니다."); }
+            } catch (e) { alert("오류 발생"); }
         }
 
         async function openViewModal(id) {
             document.getElementById('view-modal').style.display = 'flex';
             document.getElementById('view-modal-title').innerText = "로딩 중... 📄";
-            document.getElementById('view-modal-content').innerText = "데이터베이스에서 지문 원문을 가져오고 있습니다. 잠시만 기다려주세요.";
+            document.getElementById('view-modal-content').innerText = "가져오고 있습니다...";
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id);
                 const data = await res.json();
                 document.getElementById('view-modal-title').innerText = `📖 ${data.title}`;
-                
                 let combinedStr = "";
                 let sents = data.content.split('\n');
                 let trans = data.translation ? data.translation.split('\n') : [];
@@ -423,10 +377,7 @@
                     combinedStr += `\n`;
                 }
                 document.getElementById('view-modal-content').innerText = combinedStr;
-            } catch(e) {
-                document.getElementById('view-modal-title').innerText = "오류 발생";
-                document.getElementById('view-modal-content').innerText = "지문 원문을 불러오지 못했습니다. 다시 시도해 주세요.";
-            }
+            } catch(e) { document.getElementById('view-modal-content').innerText = "불러오기 실패"; }
         }
 
         function closeViewModal() { document.getElementById('view-modal').style.display = 'none'; }
@@ -434,47 +385,32 @@
         function toggleFolder(headerId, contentId) {
             const header = document.getElementById(headerId);
             const content = document.getElementById(contentId);
-            if (content.style.display === "none") {
-                content.style.display = "block";
-                header.classList.remove("collapsed");
-            } else {
-                content.style.display = "none";
-                header.classList.add("collapsed");
-            }
+            if (content.style.display === "none") { content.style.display = "block"; header.classList.remove("collapsed"); } 
+            else { content.style.display = "none"; header.classList.add("collapsed"); }
         }
 
         function toggleFolderSelectAll(event, checkbox) {
             event.stopPropagation(); 
-            const contentId = checkbox.getAttribute('data-target');
-            const contentDiv = document.getElementById(contentId);
-            const checkboxes = contentDiv.querySelectorAll('.chk-item');
-            checkboxes.forEach(chk => chk.checked = checkbox.checked);
+            const contentDiv = document.getElementById(checkbox.getAttribute('data-target'));
+            contentDiv.querySelectorAll('.chk-item').forEach(chk => chk.checked = checkbox.checked);
         }
 
         function updateFolderDropdowns() {
             const selects = [document.getElementById('folder'), document.getElementById('bulk-folder'), document.getElementById('edit-folder')];
             selects.forEach(sel => {
-                const currentVal = sel.value; 
-                sel.innerHTML = "";
+                const currentVal = sel.value; sel.innerHTML = "";
                 globalFolders.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f;
-                    opt.text = f;
-                    sel.appendChild(opt);
+                    const opt = document.createElement('option'); opt.value = f; opt.text = f; sel.appendChild(opt);
                 });
                 if(globalFolders.has(currentVal)) { sel.value = currentVal; }
             });
         }
 
         function createNewFolder() {
-            const fName = prompt("생성할 새로운 폴더 이름을 입력하세요:");
+            const fName = prompt("새로운 폴더 이름을 입력하세요:");
             if (fName && fName.trim() !== "") {
-                const cleanName = fName.trim();
-                globalFolders.add(cleanName);
-                updateFolderDropdowns();
+                const cleanName = fName.trim(); globalFolders.add(cleanName); updateFolderDropdowns();
                 document.getElementById('folder').value = cleanName;
-                document.getElementById('bulk-folder').value = cleanName;
-                document.getElementById('edit-folder').value = cleanName;
             }
         }
 
@@ -486,35 +422,27 @@
 
         function applyGlobal() {
             const order = document.getElementById('global-order').value;
-            const insert = document.getElementById('global-insert').value;
-            const desc1 = document.getElementById('global-desc1').value;
-            const desc2 = document.getElementById('global-desc2').value;
-            const desc3 = document.getElementById('global-desc3').value;
-            
+            const ins = document.getElementById('global-insert').value;
+            const d1 = document.getElementById('global-desc1').value;
+            const d2 = document.getElementById('global-desc2').value;
+            const d3 = document.getElementById('global-desc3').value;
             document.querySelectorAll('.passage-row').forEach(row => {
-                let r1 = row.querySelector('.order-cnt'); if(r1) r1.value = order;
-                let r2 = row.querySelector('.insert-cnt'); if(r2) r2.value = insert;
-                let r3 = row.querySelector('.desc1-cnt'); if(r3) r3.value = desc1;
-                let r4 = row.querySelector('.desc2-cnt'); if(r4) r4.value = desc2;
-                let r5 = row.querySelector('.desc3-cnt'); if(r5) r5.value = desc3;
+                const i_ord = row.querySelector('.order-cnt'); if(i_ord) i_ord.value = order;
+                const i_ins = row.querySelector('.insert-cnt'); if(i_ins) i_ins.value = ins;
+                const i_d1 = row.querySelector('.desc1-cnt'); if(i_d1) i_d1.value = d1;
+                const i_d2 = row.querySelector('.desc2-cnt'); if(i_d2) i_d2.value = d2;
+                const i_d3 = row.querySelector('.desc3-cnt'); if(i_d3) i_d3.value = d3;
             });
         }
 
         async function moveSelectedToFolder() {
             const folder = document.getElementById('bulk-folder').value;
-            if (!folder) return alert("이동할 폴더를 선택하세요.");
-            const selected = [];
-            document.querySelectorAll('.chk-item:checked').forEach(chk => selected.push(chk.value));
-            if(selected.length === 0) return alert("이동할 지문을 선택해주세요.");
-
+            const selected = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
+            if(selected.length === 0) return alert("선택된 지문이 없습니다.");
             try {
-                await fetch(GAS_URL, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: "update_folder", ids: selected, folder: folder }) 
-                });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update_folder", ids: selected, folder: folder }) });
                 location.reload();
-            } catch (e) { alert("이동에 실패했습니다."); }
+            } catch (e) { alert("이동 오류"); }
         }
 
         async function saveToDB() {
@@ -522,23 +450,20 @@
             const content = document.getElementById('content').value;
             const translation = document.getElementById('translation').value;
             const folder = document.getElementById('folder').value;
-            if(!title || !content) return alert("제목과 내용을 모두 입력해주세요.");
+            if(!title || !content) return alert("제목과 내용을 입력해주세요.");
             
             const saveBtn = document.getElementById('save-btn');
-            saveBtn.innerText = "업로드 중입니다...";
-            saveBtn.disabled = true;
+            saveBtn.innerText = "업로드 중..."; saveBtn.disabled = true;
             try {
                 await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content, translation, folder }) });
                 location.reload(); 
-            } catch (e) { alert("저장에 실패했습니다."); } finally { saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
+            } catch (e) { alert("저장 오류"); saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
         }
 
         async function deletePassage(id) {
-            if(!confirm("이 지문을 완전히 삭제하시겠습니까?")) return;
-            try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "delete", id: id }) });
-                location.reload();
-            } catch (e) { alert("삭제 오류"); }
+            if(!confirm("삭제하시겠습니까?")) return;
+            await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "delete", id: id }) });
+            location.reload();
         }
 
         async function openEditModal(id) {
@@ -547,17 +472,12 @@
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id);
                 const data = await res.json();
-                
-                if(data.folder && !globalFolders.has(data.folder)) {
-                    globalFolders.add(data.folder);
-                    updateFolderDropdowns();
-                }
-                
+                if(data.folder && !globalFolders.has(data.folder)) { globalFolders.add(data.folder); updateFolderDropdowns(); }
                 document.getElementById('edit-title').value = data.title;
                 document.getElementById('edit-folder').value = data.folder || "미분류";
                 document.getElementById('edit-content').value = data.content;
                 document.getElementById('edit-translation').value = data.translation || "";
-            } catch(e) { closeEditModal(); }
+            } catch(e) { }
         }
 
         function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
@@ -568,7 +488,6 @@
             const folder = document.getElementById('edit-folder').value;
             const content = document.getElementById('edit-content').value;
             const trans = document.getElementById('edit-translation').value;
-            
             if(!title || !content) return;
             document.getElementById('edit-submit-btn').disabled = true;
             try {
@@ -577,23 +496,20 @@
             } catch (e) { document.getElementById('edit-submit-btn').disabled = false; }
         }
 
-        // [신규] 웹 화면 자체 채점 기능
+        // 웹 채점 로직
         function checkAnswer(btn) {
             const input = btn.previousElementSibling;
-            
-            // 입력값의 특수기호 제거, 소문자 변환, 다중공백 제거
             const userAnswer = input.value.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
             
-            // 정답 복호화
             let rawAnswer = "";
             try {
                 rawAnswer = decodeURIComponent(escape(atob(input.getAttribute('data-answer')))); 
             } catch(e) {
                 rawAnswer = atob(input.getAttribute('data-answer'));
             }
+            
             const correctAnswer = rawAnswer.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
             
-            // 결과 표시 영역
             let mark = input.parentElement.querySelector('.result-mark');
             if(!mark) {
                 mark = document.createElement('span');
@@ -603,14 +519,13 @@
             
             if (userAnswer === correctAnswer) {
                 mark.innerText = "⭕ 정답입니다!";
-                mark.style.color = "#4ade80"; // 초록색
+                mark.style.color = "#4ade80";
             } else {
                 mark.innerText = "❌ 오답입니다. (정답: " + rawAnswer + ")";
-                mark.style.color = "#f87171"; // 빨간색
+                mark.style.color = "#f87171";
             }
         }
 
-        // [수정] 5개의 입력값을 서버로 전송하도록 완벽 복구
         async function generateIntegratedQuiz() {
             const selected = [];
             document.querySelectorAll('.passage-row').forEach(row => {
@@ -627,12 +542,11 @@
                 }
             });
             
-            if(selected.length === 0) return alert("출제할 지문을 체크박스로 선택해주세요.");
+            if(selected.length === 0) return alert("출제할 지문을 체크해주세요.");
 
             const quizDiv = document.getElementById('quiz-output');
-            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다...<br>※ API 호출 시 최대 10~15초 소요될 수 있습니다 ⚙️</h3>";
+            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다...<br>※ API 호출 시 최대 10초 가량 소요될 수 있습니다 ⚙️</h3>";
             quizDiv.style.display = "block";
-            
             const btn = document.getElementById('gen-btn');
             btn.disabled = true;
 
@@ -646,10 +560,15 @@
                 });
                 const result = await res.json();
                 
+                if (result.status === "error") {
+                     quizDiv.innerHTML = `<p style='color:red;'>서버 처리 중 오류가 발생했습니다: ${result.message}</p>`;
+                     return;
+                }
+
                 quizDiv.innerHTML = result.html_content;
                 document.getElementById('pdf-btn').style.display = "block";
             } catch(e) {
-                quizDiv.innerHTML = "<p style='color:red;'>오류가 발생했습니다.</p>";
+                quizDiv.innerHTML = "<p style='color:red;'>네트워크 또는 시스템 오류가 발생했습니다.</p>";
             } finally {
                 btn.disabled = false;
             }
@@ -657,18 +576,13 @@
 
         function downloadPDF() {
             window.scrollTo(0, 0); 
-            
             let titleInput = document.getElementById('custom-main-title').value.trim();
             let fileName = titleInput ? titleInput + '.pdf' : '영어_지문_변형_문제.pdf';
-            
             let element = document.getElementById('quiz-output');
-            let currentScale = 2; 
             
-            if (element.clientHeight > 15000) {
-                currentScale = 1;
-            } else if (element.clientHeight > 8000) {
-                currentScale = 1.5;
-            }
+            let currentScale = 2; 
+            if (element.clientHeight > 15000) currentScale = 1;
+            else if (element.clientHeight > 8000) currentScale = 1.5;
             
             html2pdf().set({ 
                 margin: [15, 15, 15, 15], 
