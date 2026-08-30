@@ -114,6 +114,7 @@
             .btn-sm { padding: 10px; font-size: 14px; } 
             .move-btn-group { grid-column: 3 / 4; grid-row: 1 / 2; }
             .modal-box { width: 95%; padding: 20px; }
+            .interactive-input { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -182,14 +183,15 @@
                 
                 <div class="divider-line admin-only admin-only-block" style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 5px;"></div>
                 
-                <div class="batch-group admin-only admin-only-flex">
+                <div class="batch-group admin-only admin-only-flex" style="width: 100%;">
                     <span style="font-weight:bold; color:#a5f3fc;">📁 선택지문 폴더이동:</span>
                     <select id="bulk-folder">
                         <option value="미분류">미분류</option>
                     </select>
                     <button class="btn-outline" onclick="moveSelectedToFolder()">이동</button>
+                    <!-- 순서 영구 고정 버튼 -->
+                    <button id="save-order-btn" class="btn-outline" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7; margin-left: auto;">📁 현재 순서 DB 고정</button>
                 </div>
-                <button id="save-order-btn" class="btn-outline admin-only admin-only-block" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7; margin-left: auto; margin-top:10px;">📁 현재 순서 DB에 고정</button>
             </div>
             
             <div class="passage-row header-row" style="margin-top:0;">
@@ -201,7 +203,7 @@
             </div>
             
             <div id="passage-list">
-                <p style="text-align:center; padding:20px; color:#a5f3fc; font-weight:bold;">서버 대기 중...</p>
+                <p style="text-align:center; padding:20px; color:#a5f3fc; font-weight:bold;">서버 통신 대기 중...</p>
             </div>
             
             <input type="text" id="custom-main-title" placeholder="출력될 문제지 제목 (미입력 시 '영어 지문 변형 문제')" style="margin-top: 25px; margin-bottom: 10px;">
@@ -214,6 +216,7 @@
         </button>
     </div>
 
+    <!-- 숨겨진 관리자 모드 버튼 -->
     <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
 
     <!-- 수정 모달 -->
@@ -233,7 +236,6 @@
                 <textarea id="edit-translation" class="flex-1" rows="8" placeholder="해석을 로딩중입니다..."></textarea>
             </div>
 
-            <!-- [누락 해결] 모달창 내 빈출 문장 지정 패널 추가 -->
             <button class="btn-outline" style="width:100%; margin-top:10px; margin-bottom:10px; border-color:#eab308; color:#eab308;" onclick="buildHighlightPreview('edit-content', 'edit-highlight-preview')">⭐ 서술형 빈출 문장 지정 패널 새로고침</button>
             <div id="edit-highlight-preview" class="highlight-box" style="display:none;"></div>
 
@@ -333,7 +335,6 @@
                             <div class="passage-row" data-id="${item.id}">
                                 <input type="checkbox" class="chk-item" value="${item.id}">
                                 <span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span>
-                                
                                 <div class="input-group">
                                     <div class="mode-count">
                                         <input type="number" class="order-cnt" value="1" min="0" title="순서배열">
@@ -350,7 +351,6 @@
                                         <input type="checkbox" class="desc3-all" title="통문장영작(전체)">
                                     </div>
                                 </div>
-
                                 <div class="btn-group admin-only admin-only-flex">
                                     <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
                                     <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
@@ -625,10 +625,13 @@
         }
 
         async function generateIntegratedQuiz() {
-            const isAllMode = document.querySelector('input[name="output_mode"]:checked').value === 'all';
-            const onlyHighlight = document.getElementById('only-highlight-gen').checked; 
+            const outputModeNode = document.querySelector('input[name="output_mode"]:checked');
+            const isAllMode = outputModeNode ? outputModeNode.value === 'all' : false;
+            const onlyHighlightNode = document.getElementById('only-highlight-gen');
+            const onlyHighlight = onlyHighlightNode ? onlyHighlightNode.checked : false; 
             const selected = [];
             
+            // 화면 상의 순서(▲/▼ 이동 반영) 그대로 데이터 수집
             document.querySelectorAll('.passage-row').forEach(row => {
                 const chk = row.querySelector('.chk-item');
                 if(chk && chk.checked) {
@@ -655,7 +658,7 @@
             if(selected.length === 0) return alert("출제할 지문과 문항 수를 선택해주세요.");
 
             const quizDiv = document.getElementById('quiz-output');
-            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다...<br>※ API 호출 시 최대 10~15초 소요될 수 있습니다 ⚙️</h3>";
+            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다...<br>※ API 호출 시 최대 10~15초 가량 소요될 수 있습니다 ⚙️</h3>";
             quizDiv.style.display = "block";
             const btn = document.getElementById('gen-btn');
             btn.disabled = true;
@@ -671,7 +674,7 @@
                 const result = await res.json();
                 
                 if (result.status === "error") {
-                     quizDiv.innerHTML = `<p style='color:red;'>서버 처리 중 오류가 발생했습니다: ${result.message}</p>`;
+                     quizDiv.innerHTML = `<p style='color:red;'>서버 오류: ${result.message}</p>`;
                      return;
                 }
 
