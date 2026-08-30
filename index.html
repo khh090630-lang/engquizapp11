@@ -26,7 +26,6 @@
         .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
         .batch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
-        /* 문항 칸 영역 */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 250px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); transition: transform 0.2s ease; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px; }
         
@@ -55,6 +54,12 @@
         .toggle-icon { font-size: 12px; transition: transform 0.3s ease; }
         .folder-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
+        /* [신규] 서술형 하이라이트 패널 CSS */
+        .highlight-box { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; margin-bottom: 15px; max-height: 250px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(234, 179, 8, 0.3); }
+        .highlight-item { padding: 10px; border-radius: 6px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 14px; line-height: 1.5; transition: all 0.2s; border: 1px solid transparent; }
+        .highlight-item:hover { background: rgba(255,255,255,0.1); }
+        .highlight-item.active { background: rgba(234, 179, 8, 0.2); border-color: #eab308; color: #fde047; font-weight: bold; }
+
         #quiz-output { padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px; font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         #quiz-output * { color: #000; text-shadow: none !important; box-sizing: border-box; }
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-top: 0; margin-bottom: 30px; letter-spacing: 1.5px; }
@@ -65,13 +70,11 @@
         .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
         .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
 
-        /* [웹 채점용 UI 디자인] */
         .interactive-input { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; background: #f1f5f9; padding: 12px; border-radius: 8px; }
         .interactive-input input { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; padding: 10px; box-sizing: border-box; font-family: inherit; font-size: 14px; font-weight: normal; }
         .interactive-input button { background: #2563eb; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; border:none; width: 120px; align-self: flex-end;}
         .result-mark { font-weight: bold; font-size: 14px; margin-top: 5px; display: block; text-align: right; }
 
-        /* 프린트 전용 스타일 */
         @media print {
             .interactive-input { background: transparent !important; padding: 0 !important; border: none !important; }
             .interactive-input button, .result-mark { display: none !important; }
@@ -116,9 +119,9 @@
 </head>
 <body>
     <div class="container">
+        <!-- 등록 구역 -->
         <div class="card admin-only admin-only-block">
             <h2>✨ 1. 새로운 지문 데이터 등록</h2>
-            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">해석본을 비워두면, 서술형 문제 출제 시 AI가 자동으로 번역하여 저장합니다.</p>
             <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
                 <select id="folder" style="margin-bottom: 0; flex: 1; min-width: 120px;">
                     <option value="미분류">미분류</option>
@@ -133,6 +136,10 @@
                 <textarea id="translation" class="flex-1" rows="5" placeholder="한국어 해석 입력 (생략 시 자동 생성)"></textarea>
             </div>
 
+            <!-- [신규] 하이라이트 문장 지정 패널 -->
+            <button class="btn-outline" style="width:100%; margin-bottom:15px; border-color:#eab308; color:#eab308;" onclick="buildHighlightPreview('content', 'highlight-preview')">⭐ 서술형 빈출 문장 지정하기 패널 열기 (선택)</button>
+            <div id="highlight-preview" class="highlight-box" style="display:none;"></div>
+
             <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
         </div>
 
@@ -140,18 +147,20 @@
             <h2>🎯 지문 목록 및 문제지 출력</h2>
             
             <div class="batch-control">
-                <!-- [핵심] 출제 모드 전환 토글 -->
                 <div class="batch-group" style="width:100%; justify-content: flex-start; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
                     <span style="font-weight:bold; color:#a5f3fc;">🛠️ 출제 모드 선택:</span>
                     <label style="cursor:pointer; margin-right:15px; display:flex; align-items:center; gap:5px;">
-                        <input type="radio" name="output_mode" value="count" checked onchange="toggleOutputMode()"> 🔢 문항 수 직접 입력
+                        <input type="radio" name="output_mode" value="count" checked onchange="toggleOutputMode()"> 🔢 문항 수 지정
                     </label>
-                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
-                        <input type="radio" name="output_mode" value="all" onchange="toggleOutputMode()"> ☑️ 지문 전체 문장 출제
+                    <label style="cursor:pointer; margin-right:15px; display:flex; align-items:center; gap:5px;">
+                        <input type="radio" name="output_mode" value="all" onchange="toggleOutputMode()"> ☑️ 지문 전체 문장
+                    </label>
+                    <!-- [신규] 빈출 문장 출제 필터링 옵션 -->
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; color:#fde047; font-weight:bold;">
+                        <input type="checkbox" id="only-highlight-gen"> ⭐ 빈출 문장만 서술형 출제
                     </label>
                 </div>
 
-                <!-- 수량 입력 일괄적용 패널 -->
                 <div id="batch-count-panel" class="batch-group" style="width:100%; justify-content: flex-start;">
                     <span style="font-weight:bold; color:#a5f3fc;">⚡ 일괄 적용:</span>
                     <input type="number" id="global-order" placeholder="순서" value="1" title="순서 배열">
@@ -162,7 +171,6 @@
                     <button class="btn-outline" onclick="applyGlobalCount()">적용</button>
                 </div>
 
-                <!-- 전체 출제 일괄적용 패널 -->
                 <div id="batch-all-panel" class="batch-group" style="width:100%; justify-content: flex-start; display:none;">
                     <span style="font-weight:bold; color:#a5f3fc;">⚡ 일괄 체크(ALL):</span>
                     <label style="margin-left:5px;"><input type="checkbox" id="global-order-all"> 순서</label>
@@ -182,7 +190,6 @@
                     </select>
                     <button class="btn-outline" onclick="moveSelectedToFolder()">이동</button>
                 </div>
-                
                 <button id="save-order-btn" class="btn-outline admin-only admin-only-block" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7; margin-left: auto; margin-top:10px;">📁 현재 순서 DB에 고정</button>
             </div>
             
@@ -210,6 +217,7 @@
 
     <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
 
+    <!-- 수정 모달 -->
     <div class="modal-overlay" id="edit-modal">
         <div class="card modal-box" style="max-width: 800px;">
             <h2>✏️ 저장된 지문 수정하기</h2>
@@ -225,6 +233,11 @@
                 <textarea id="edit-content" class="flex-1" rows="8" placeholder="문장을 로딩중입니다..."></textarea>
                 <textarea id="edit-translation" class="flex-1" rows="8" placeholder="해석을 로딩중입니다..."></textarea>
             </div>
+
+            <!-- [신규] 모달 내 하이라이트 지정 패널 -->
+            <button class="btn-outline" style="width:100%; margin-bottom:10px; border-color:#eab308; color:#eab308;" onclick="buildHighlightPreview('edit-content', 'edit-highlight-preview')">⭐ 서술형 빈출 문장 지정 패널 새로고침</button>
+            <div id="edit-highlight-preview" class="highlight-box" style="display:none;"></div>
+
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeEditModal()">취소</button>
                 <button class="btn-save" id="edit-submit-btn" onclick="submitEdit()">수정 내용 덮어쓰기</button>
@@ -244,6 +257,7 @@
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
+        
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -322,7 +336,6 @@
                                 <span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span>
                                 
                                 <div class="input-group">
-                                    <!-- 문항 수 입력 모드 -->
                                     <div class="mode-count">
                                         <input type="number" class="order-cnt" value="1" min="0" title="순서배열">
                                         <input type="number" class="insert-cnt" value="1" min="0" title="문장삽입">
@@ -330,7 +343,6 @@
                                         <input type="number" class="desc2-cnt" value="0" min="0" title="어형변형">
                                         <input type="number" class="desc3-cnt" value="0" min="0" title="통문장영작">
                                     </div>
-                                    <!-- 전체 체크박스 모드 -->
                                     <div class="mode-all">
                                         <input type="checkbox" class="order-all" title="순서배열(1문제)">
                                         <input type="checkbox" class="insert-all" title="문장삽입(전체)">
@@ -354,19 +366,41 @@
                     folderIndex++;
                 }
                 container.innerHTML = htmlStr;
-                toggleOutputMode(); // 초기 모드 상태 적용
+                toggleOutputMode(); 
             } catch (err) {
                 document.getElementById('passage-list').innerHTML = "<p style='color:#ffb199;'>서버 통신 오류가 발생했습니다.</p>";
             }
         };
 
-        // [핵심] 출제 모드(수량 vs ALL 체크박스) 전환
+        // [신규] 텍스트에어리어의 문장들을 분리하여 하이라이트(빈출 지정) 가능한 패널 생성
+        function buildHighlightPreview(sourceId, previewId, existingHighlights = []) {
+            const text = document.getElementById(sourceId).value;
+            const sents = text.split('\n').map(s=>s.trim()).filter(s=>s!=="");
+            const box = document.getElementById(previewId);
+            box.innerHTML = '';
+            
+            if(sents.length === 0) {
+                box.style.display = 'none';
+                alert("먼저 영어 지문을 입력해주세요.");
+                return;
+            }
+            
+            box.style.display = 'flex';
+            box.innerHTML = `<p style="font-size:12px; color:#fde047; margin:0 0 5px 0;">⭐ 서술형으로 자주 출제되는 문장을 클릭하여 하이라이트 지정하세요.</p>`;
+            sents.forEach((s, i) => {
+                const div = document.createElement('div');
+                div.className = 'highlight-item';
+                if(existingHighlights[i]) div.classList.add('active'); // 기존 저장된 상태 복원
+                div.innerText = `[${i+1}] ${s}`;
+                div.onclick = function() { this.classList.toggle('active'); };
+                box.appendChild(div);
+            });
+        }
+
         function toggleOutputMode() {
             const isAllMode = document.querySelector('input[name="output_mode"]:checked').value === 'all';
-            
             document.querySelectorAll('.mode-count').forEach(el => el.style.display = isAllMode ? 'none' : 'flex');
             document.querySelectorAll('.mode-all').forEach(el => el.style.display = isAllMode ? 'flex' : 'none');
-            
             document.getElementById('batch-count-panel').style.display = isAllMode ? 'none' : 'flex';
             document.getElementById('batch-all-panel').style.display = isAllMode ? 'flex' : 'none';
         }
@@ -514,12 +548,20 @@
             const content = document.getElementById('content').value;
             const translation = document.getElementById('translation').value;
             const folder = document.getElementById('folder').value;
+            
+            // [신규] 패널에서 선택된 빈출 문장 배열 긁어오기 (패널이 열린 적이 없으면 전부 false)
+            const box = document.getElementById('highlight-preview');
+            let highlights = [];
+            if(box.style.display !== 'none') {
+                highlights = Array.from(box.querySelectorAll('.highlight-item')).map(el => el.classList.contains('active'));
+            }
+
             if(!title || !content) return alert("제목과 내용을 입력해주세요.");
             
             const saveBtn = document.getElementById('save-btn');
             saveBtn.innerText = "업로드 중..."; saveBtn.disabled = true;
             try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content, translation, folder }) });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content, translation, folder, highlights }) });
                 location.reload(); 
             } catch (e) { alert("저장 오류"); saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
         }
@@ -541,6 +583,9 @@
                 document.getElementById('edit-folder').value = data.folder || "미분류";
                 document.getElementById('edit-content').value = data.content;
                 document.getElementById('edit-translation').value = data.translation || "";
+                
+                // [신규] 모달을 열 때 빈출 문장 정보(highlights)를 바탕으로 미리 패널 렌더링
+                buildHighlightPreview('edit-content', 'edit-highlight-preview', data.highlights || []);
             } catch(e) { }
         }
 
@@ -552,10 +597,18 @@
             const folder = document.getElementById('edit-folder').value;
             const content = document.getElementById('edit-content').value;
             const trans = document.getElementById('edit-translation').value;
+            
+            // [신규] 수정된 빈출 정보 긁어오기
+            const box = document.getElementById('edit-highlight-preview');
+            let highlights = [];
+            if(box.style.display !== 'none') {
+                highlights = Array.from(box.querySelectorAll('.highlight-item')).map(el => el.classList.contains('active'));
+            }
+
             if(!title || !content) return;
             document.getElementById('edit-submit-btn').disabled = true;
             try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content, translation: trans, folder }) });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content, translation: trans, folder, highlights }) });
                 location.reload();
             } catch (e) { document.getElementById('edit-submit-btn').disabled = false; }
         }
@@ -563,35 +616,22 @@
         function checkAnswer(btn) {
             const input = btn.previousElementSibling;
             const userAnswer = input.value.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
-            
             let rawAnswer = "";
-            try {
-                rawAnswer = decodeURIComponent(escape(atob(input.getAttribute('data-answer')))); 
-            } catch(e) {
-                rawAnswer = atob(input.getAttribute('data-answer'));
-            }
-            
+            try { rawAnswer = decodeURIComponent(escape(atob(input.getAttribute('data-answer')))); } catch(e) { rawAnswer = atob(input.getAttribute('data-answer')); }
             const correctAnswer = rawAnswer.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
-            
             let mark = input.parentElement.querySelector('.result-mark');
-            if(!mark) {
-                mark = document.createElement('span');
-                mark.className = 'result-mark';
-                input.parentElement.appendChild(mark);
-            }
+            if(!mark) { mark = document.createElement('span'); mark.className = 'result-mark'; input.parentElement.appendChild(mark); }
             
             if (userAnswer === correctAnswer) {
-                mark.innerText = "⭕ 정답입니다!";
-                mark.style.color = "#4ade80";
+                mark.innerText = "⭕ 정답입니다!"; mark.style.color = "#4ade80";
             } else {
-                mark.innerText = "❌ 오답입니다. (정답: " + rawAnswer + ")";
-                mark.style.color = "#f87171";
+                mark.innerText = "❌ 오답입니다. (정답: " + rawAnswer + ")"; mark.style.color = "#f87171";
             }
         }
 
-        // [수정] 모드에 따라 전송하는 데이터를 숫자인지 'ALL'인지 구별
         async function generateIntegratedQuiz() {
             const isAllMode = document.querySelector('input[name="output_mode"]:checked').value === 'all';
+            const onlyHighlight = document.getElementById('only-highlight-gen').checked; // [신규] 빈출 필터링 옵션
             const selected = [];
             
             document.querySelectorAll('.passage-row').forEach(row => {
@@ -611,7 +651,6 @@
                         desc2 = parseInt(row.querySelector('.desc2-cnt').value) || 0;
                         desc3 = parseInt(row.querySelector('.desc3-cnt').value) || 0;
                     }
-                    // 하나라도 선택된 항목이 있을 때만 추가
                     if(order !== 0 || insert !== 0 || desc1 !== 0 || desc2 !== 0 || desc3 !== 0) {
                         selected.push({ id: chk.value, order, insert, desc1, desc2, desc3 });
                     }
@@ -632,7 +671,8 @@
                 const res = await fetch(GAS_URL, { 
                     method: "POST", 
                     headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: "generate_batch", passages: selected, mainTitle: mainTitle }) 
+                    // [신규] 백엔드에 빈출 필터 옵션(onlyHighlight) 같이 전달
+                    body: JSON.stringify({ action: "generate_batch", passages: selected, mainTitle: mainTitle, onlyHighlight: onlyHighlight }) 
                 });
                 const result = await res.json();
                 
