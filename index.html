@@ -26,15 +26,19 @@
         .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
         .batch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
-        /* 문항 칸 조절 */
+        /* 문항 칸 영역 */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 250px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); transition: transform 0.2s ease; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px; }
         
         .passage-title { font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; transition: color 0.2s ease; }
         .passage-title:hover { color: #00f2fe; text-decoration: underline; }
-        .opt-label { font-size: 11px; color: #a5f3fc; font-weight: bold; margin-left:2px;} 
-        .input-group { display: flex; gap: 4px; justify-content: flex-end; align-items: center;}
-        .input-group input { width: 45px; padding: 6px; margin: 0; text-align: center; }
+        
+        .input-group { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 100%;}
+        .mode-count { display: flex; gap: 4px; width: 100%; justify-content: flex-end; }
+        .mode-all { display: none; gap: 4px; width: 100%; justify-content: flex-end; padding-right: 5px; }
+        .mode-count input { width: 45px; padding: 6px; margin: 0; text-align: center; }
+        .mode-all input[type="checkbox"] { width: 45px; height: 18px; margin: 0; cursor: pointer; }
+
         .btn-group { display: flex; gap: 6px; }
         .btn-sm { padding: 8px; font-size: 13px; border-radius: 6px; flex: 1;}
         .btn-edit { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #333; }
@@ -67,7 +71,7 @@
         .interactive-input button { background: #2563eb; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; border:none; width: 120px; align-self: flex-end;}
         .result-mark { font-weight: bold; font-size: 14px; margin-top: 5px; display: block; text-align: right; }
 
-        /* [프린트 전용 스타일] PDF 렌더링 시 채점 버튼은 가리고 입력칸은 줄눈으로 바꿈 */
+        /* 프린트 전용 스타일 */
         @media print {
             .interactive-input { background: transparent !important; padding: 0 !important; border: none !important; }
             .interactive-input button, .result-mark { display: none !important; }
@@ -100,7 +104,7 @@
             .passage-row, body.admin-mode .passage-row { grid-template-columns: 30px 1fr 30px; gap: 10px; padding: 12px; }
             .passage-title { white-space: normal; word-break: break-word; font-size: 14px; grid-column: 2 / 3; }
             .input-group { grid-column: 1 / 4; justify-content: flex-start; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; flex-wrap: wrap;}
-            .input-group input { width: 45px;}
+            .mode-count input { width: 45px;}
             body.admin-mode .input-group { grid-column: 1 / 4; }
             .btn-group { grid-column: 1 / 4; width: 100%; }
             body.admin-mode .btn-group { grid-column: 1 / 4; }
@@ -112,7 +116,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- 등록 구역 (관리자 모드만) -->
         <div class="card admin-only admin-only-block">
             <h2>✨ 1. 새로운 지문 데이터 등록</h2>
             <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">해석본을 비워두면, 서술형 문제 출제 시 AI가 자동으로 번역하여 저장합니다.</p>
@@ -137,14 +140,37 @@
             <h2>🎯 지문 목록 및 문제지 출력</h2>
             
             <div class="batch-control">
-                <div class="batch-group" style="width:100%; justify-content: flex-start;">
-                    <span style="font-weight:bold; color:#a5f3fc;">⚡ 문항수 일괄 적용:</span>
+                <!-- [핵심] 출제 모드 전환 토글 -->
+                <div class="batch-group" style="width:100%; justify-content: flex-start; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                    <span style="font-weight:bold; color:#a5f3fc;">🛠️ 출제 모드 선택:</span>
+                    <label style="cursor:pointer; margin-right:15px; display:flex; align-items:center; gap:5px;">
+                        <input type="radio" name="output_mode" value="count" checked onchange="toggleOutputMode()"> 🔢 문항 수 직접 입력
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="radio" name="output_mode" value="all" onchange="toggleOutputMode()"> ☑️ 지문 전체 문장 출제
+                    </label>
+                </div>
+
+                <!-- 수량 입력 일괄적용 패널 -->
+                <div id="batch-count-panel" class="batch-group" style="width:100%; justify-content: flex-start;">
+                    <span style="font-weight:bold; color:#a5f3fc;">⚡ 일괄 적용:</span>
                     <input type="number" id="global-order" placeholder="순서" value="1" title="순서 배열">
                     <input type="number" id="global-insert" placeholder="삽입" value="1" title="문장 삽입">
                     <input type="number" id="global-desc1" placeholder="단어배열" value="0" title="서술형: 단어 배열">
                     <input type="number" id="global-desc2" placeholder="어형변형" value="0" title="서술형: 어형 변형 영작">
                     <input type="number" id="global-desc3" placeholder="통문장" value="0" title="서술형: 통문장 영작">
-                    <button class="btn-outline" onclick="applyGlobal()">적용</button>
+                    <button class="btn-outline" onclick="applyGlobalCount()">적용</button>
+                </div>
+
+                <!-- 전체 출제 일괄적용 패널 -->
+                <div id="batch-all-panel" class="batch-group" style="width:100%; justify-content: flex-start; display:none;">
+                    <span style="font-weight:bold; color:#a5f3fc;">⚡ 일괄 체크(ALL):</span>
+                    <label style="margin-left:5px;"><input type="checkbox" id="global-order-all"> 순서</label>
+                    <label style="margin-left:5px;"><input type="checkbox" id="global-insert-all"> 삽입</label>
+                    <label style="margin-left:5px;"><input type="checkbox" id="global-desc1-all"> 단어배열</label>
+                    <label style="margin-left:5px;"><input type="checkbox" id="global-desc2-all"> 어형변형</label>
+                    <label style="margin-left:5px;"><input type="checkbox" id="global-desc3-all"> 통문장</label>
+                    <button class="btn-outline" onclick="applyGlobalAll()">체크 적용</button>
                 </div>
                 
                 <div class="divider-line admin-only admin-only-block" style="width: 1px; height: 30px; background: rgba(0,242,254,0.2); margin: 0 5px;"></div>
@@ -217,9 +243,7 @@
     </div>
 
     <script>
-        // 자신의 웹 앱 URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbw053Q9gYo8v8dbUJK0O1ej1VJKjMTh9dpp5rlN0MdYcm6qRDXOonIOfB5hiTdvWNA5/exec";
-        
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -296,13 +320,26 @@
                             <div class="passage-row" data-id="${item.id}">
                                 <input type="checkbox" class="chk-item" value="${item.id}">
                                 <span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span>
+                                
                                 <div class="input-group">
-                                    <input type="number" class="order-cnt" value="1" min="0" title="순서배열">
-                                    <input type="number" class="insert-cnt" value="1" min="0" title="문장삽입">
-                                    <input type="number" class="desc1-cnt" value="0" min="0" title="서술형1(단어배열)">
-                                    <input type="number" class="desc2-cnt" value="0" min="0" title="서술형2(어형변형)">
-                                    <input type="number" class="desc3-cnt" value="0" min="0" title="서술형3(영작)">
+                                    <!-- 문항 수 입력 모드 -->
+                                    <div class="mode-count">
+                                        <input type="number" class="order-cnt" value="1" min="0" title="순서배열">
+                                        <input type="number" class="insert-cnt" value="1" min="0" title="문장삽입">
+                                        <input type="number" class="desc1-cnt" value="0" min="0" title="단어배열">
+                                        <input type="number" class="desc2-cnt" value="0" min="0" title="어형변형">
+                                        <input type="number" class="desc3-cnt" value="0" min="0" title="통문장영작">
+                                    </div>
+                                    <!-- 전체 체크박스 모드 -->
+                                    <div class="mode-all">
+                                        <input type="checkbox" class="order-all" title="순서배열(1문제)">
+                                        <input type="checkbox" class="insert-all" title="문장삽입(전체)">
+                                        <input type="checkbox" class="desc1-all" title="단어배열(전체)">
+                                        <input type="checkbox" class="desc2-all" title="어형변형(전체)">
+                                        <input type="checkbox" class="desc3-all" title="통문장영작(전체)">
+                                    </div>
                                 </div>
+
                                 <div class="btn-group admin-only admin-only-flex">
                                     <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
                                     <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
@@ -317,10 +354,52 @@
                     folderIndex++;
                 }
                 container.innerHTML = htmlStr;
+                toggleOutputMode(); // 초기 모드 상태 적용
             } catch (err) {
                 document.getElementById('passage-list').innerHTML = "<p style='color:#ffb199;'>서버 통신 오류가 발생했습니다.</p>";
             }
         };
+
+        // [핵심] 출제 모드(수량 vs ALL 체크박스) 전환
+        function toggleOutputMode() {
+            const isAllMode = document.querySelector('input[name="output_mode"]:checked').value === 'all';
+            
+            document.querySelectorAll('.mode-count').forEach(el => el.style.display = isAllMode ? 'none' : 'flex');
+            document.querySelectorAll('.mode-all').forEach(el => el.style.display = isAllMode ? 'flex' : 'none');
+            
+            document.getElementById('batch-count-panel').style.display = isAllMode ? 'none' : 'flex';
+            document.getElementById('batch-all-panel').style.display = isAllMode ? 'flex' : 'none';
+        }
+
+        function applyGlobalCount() {
+            const order = document.getElementById('global-order').value;
+            const ins = document.getElementById('global-insert').value;
+            const d1 = document.getElementById('global-desc1').value;
+            const d2 = document.getElementById('global-desc2').value;
+            const d3 = document.getElementById('global-desc3').value;
+            document.querySelectorAll('.passage-row').forEach(row => {
+                const i_ord = row.querySelector('.order-cnt'); if(i_ord) i_ord.value = order;
+                const i_ins = row.querySelector('.insert-cnt'); if(i_ins) i_ins.value = ins;
+                const i_d1 = row.querySelector('.desc1-cnt'); if(i_d1) i_d1.value = d1;
+                const i_d2 = row.querySelector('.desc2-cnt'); if(i_d2) i_d2.value = d2;
+                const i_d3 = row.querySelector('.desc3-cnt'); if(i_d3) i_d3.value = d3;
+            });
+        }
+
+        function applyGlobalAll() {
+            const o = document.getElementById('global-order-all').checked;
+            const i = document.getElementById('global-insert-all').checked;
+            const d1 = document.getElementById('global-desc1-all').checked;
+            const d2 = document.getElementById('global-desc2-all').checked;
+            const d3 = document.getElementById('global-desc3-all').checked;
+            document.querySelectorAll('.passage-row').forEach(row => {
+                const c_o = row.querySelector('.order-all'); if(c_o) c_o.checked = o;
+                const c_i = row.querySelector('.insert-all'); if(c_i) c_i.checked = i;
+                const c_d1 = row.querySelector('.desc1-all'); if(c_d1) c_d1.checked = d1;
+                const c_d2 = row.querySelector('.desc2-all'); if(c_d2) c_d2.checked = d2;
+                const c_d3 = row.querySelector('.desc3-all'); if(c_d3) c_d3.checked = d3;
+            });
+        }
 
         function moveRow(btn, direction) {
             const row = btn.closest('.passage-row');
@@ -420,21 +499,6 @@
             document.querySelectorAll('.folder-select-all').forEach(chk => chk.checked = isChecked);
         }
 
-        function applyGlobal() {
-            const order = document.getElementById('global-order').value;
-            const ins = document.getElementById('global-insert').value;
-            const d1 = document.getElementById('global-desc1').value;
-            const d2 = document.getElementById('global-desc2').value;
-            const d3 = document.getElementById('global-desc3').value;
-            document.querySelectorAll('.passage-row').forEach(row => {
-                const i_ord = row.querySelector('.order-cnt'); if(i_ord) i_ord.value = order;
-                const i_ins = row.querySelector('.insert-cnt'); if(i_ins) i_ins.value = ins;
-                const i_d1 = row.querySelector('.desc1-cnt'); if(i_d1) i_d1.value = d1;
-                const i_d2 = row.querySelector('.desc2-cnt'); if(i_d2) i_d2.value = d2;
-                const i_d3 = row.querySelector('.desc3-cnt'); if(i_d3) i_d3.value = d3;
-            });
-        }
-
         async function moveSelectedToFolder() {
             const folder = document.getElementById('bulk-folder').value;
             const selected = Array.from(document.querySelectorAll('.chk-item:checked')).map(chk => chk.value);
@@ -496,7 +560,6 @@
             } catch (e) { document.getElementById('edit-submit-btn').disabled = false; }
         }
 
-        // 웹 채점 로직
         function checkAnswer(btn) {
             const input = btn.previousElementSibling;
             const userAnswer = input.value.trim().toLowerCase().replace(/[.,?!]/g, "").replace(/\s+/g, " ");
@@ -526,26 +589,39 @@
             }
         }
 
+        // [수정] 모드에 따라 전송하는 데이터를 숫자인지 'ALL'인지 구별
         async function generateIntegratedQuiz() {
+            const isAllMode = document.querySelector('input[name="output_mode"]:checked').value === 'all';
             const selected = [];
+            
             document.querySelectorAll('.passage-row').forEach(row => {
                 const chk = row.querySelector('.chk-item');
                 if(chk && chk.checked) {
-                    selected.push({ 
-                        id: chk.value, 
-                        order: parseInt(row.querySelector('.order-cnt').value) || 0, 
-                        insert: parseInt(row.querySelector('.insert-cnt').value) || 0,
-                        desc1: parseInt(row.querySelector('.desc1-cnt').value) || 0,
-                        desc2: parseInt(row.querySelector('.desc2-cnt').value) || 0,
-                        desc3: parseInt(row.querySelector('.desc3-cnt').value) || 0
-                    });
+                    let order, insert, desc1, desc2, desc3;
+                    if (isAllMode) {
+                        order = row.querySelector('.order-all').checked ? "ALL" : 0;
+                        insert = row.querySelector('.insert-all').checked ? "ALL" : 0;
+                        desc1 = row.querySelector('.desc1-all').checked ? "ALL" : 0;
+                        desc2 = row.querySelector('.desc2-all').checked ? "ALL" : 0;
+                        desc3 = row.querySelector('.desc3-all').checked ? "ALL" : 0;
+                    } else {
+                        order = parseInt(row.querySelector('.order-cnt').value) || 0;
+                        insert = parseInt(row.querySelector('.insert-cnt').value) || 0;
+                        desc1 = parseInt(row.querySelector('.desc1-cnt').value) || 0;
+                        desc2 = parseInt(row.querySelector('.desc2-cnt').value) || 0;
+                        desc3 = parseInt(row.querySelector('.desc3-cnt').value) || 0;
+                    }
+                    // 하나라도 선택된 항목이 있을 때만 추가
+                    if(order !== 0 || insert !== 0 || desc1 !== 0 || desc2 !== 0 || desc3 !== 0) {
+                        selected.push({ id: chk.value, order, insert, desc1, desc2, desc3 });
+                    }
                 }
             });
             
-            if(selected.length === 0) return alert("출제할 지문을 체크해주세요.");
+            if(selected.length === 0) return alert("출제할 지문과 문항 수를 선택해주세요.");
 
             const quizDiv = document.getElementById('quiz-output');
-            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다...<br>※ API 호출 시 최대 10초 가량 소요될 수 있습니다 ⚙️</h3>";
+            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 문제를 생성하고 있습니다...<br>※ API 호출 시 최대 10~15초 소요될 수 있습니다 ⚙️</h3>";
             quizDiv.style.display = "block";
             const btn = document.getElementById('gen-btn');
             btn.disabled = true;
