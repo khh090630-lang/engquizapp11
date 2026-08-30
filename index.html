@@ -26,7 +26,6 @@
         .batch-control { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: rgba(0, 242, 254, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,242,254,0.1);}
         .batch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
-        /* 5개 입력칸 확보를 위해 컬럼 너비 조정 */
         .passage-row { display: grid; grid-template-columns: 30px 1fr 280px 110px; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,242,254,0.1); gap: 15px; background: rgba(0,0,0,0.15); transition: transform 0.2s ease; }
         .header-row { background: rgba(0, 0, 0, 0.4); font-weight: bold; border-radius: 12px 12px 0 0; border: none; margin-top: 15px; }
         
@@ -51,12 +50,6 @@
         .folder-content { display: block; }
         .toggle-icon { font-size: 12px; transition: transform 0.3s ease; }
         .folder-header.collapsed .toggle-icon { transform: rotate(-90deg); }
-
-        /* 서술형 빈출문장 패널 */
-        .highlight-box { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; margin-bottom: 15px; max-height: 250px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(234, 179, 8, 0.3); }
-        .highlight-item { padding: 10px; border-radius: 6px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 14px; line-height: 1.5; transition: all 0.2s; border: 1px solid transparent; }
-        .highlight-item:hover { background: rgba(255,255,255,0.1); }
-        .highlight-item.active { background: rgba(234, 179, 8, 0.2); border-color: #eab308; color: #fde047; font-weight: bold; }
 
         #quiz-output { padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px; font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         #quiz-output * { color: #000; text-shadow: none !important; box-sizing: border-box; }
@@ -111,6 +104,7 @@
             .btn-sm { padding: 10px; font-size: 14px; } 
             .move-btn-group { grid-column: 3 / 4; grid-row: 1 / 2; }
             .modal-box { width: 95%; padding: 20px; }
+            .interactive-input { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -133,10 +127,6 @@
                 <textarea id="content" class="flex-1" rows="5" placeholder="영어 지문 입력 (엔터로 문장 구분)"></textarea>
                 <textarea id="translation" class="flex-1" rows="5" placeholder="한국어 해석 입력 (생략 시 자동 생성)"></textarea>
             </div>
-
-            <button class="btn-outline" style="width:100%; margin-bottom:15px; border-color:#eab308; color:#eab308;" onclick="buildHighlightPreview('content', 'highlight-preview')">⭐ 서술형 빈출 문장 지정하기 패널 열기 (선택)</button>
-            <div id="highlight-preview" class="highlight-box" style="display:none;"></div>
-
             <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
         </div>
 
@@ -208,10 +198,6 @@
                 <textarea id="edit-content" class="flex-1" rows="8" placeholder="문장을 로딩중입니다..."></textarea>
                 <textarea id="edit-translation" class="flex-1" rows="8" placeholder="해석을 로딩중입니다..."></textarea>
             </div>
-
-            <button class="btn-outline" style="width:100%; margin-top:10px; margin-bottom:10px; border-color:#eab308; color:#eab308;" onclick="buildHighlightPreview('edit-content', 'edit-highlight-preview')">⭐ 서술형 빈출 문장 지정 패널 새로고침</button>
-            <div id="edit-highlight-preview" class="highlight-box" style="display:none;"></div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeEditModal()">취소</button>
                 <button class="btn-save" id="edit-submit-btn" onclick="submitEdit()">수정 내용 덮어쓰기</button>
@@ -311,9 +297,9 @@
                                 <div class="input-group">
                                     <input type="number" class="order-cnt" value="1" min="0" title="순서배열">
                                     <input type="number" class="insert-cnt" value="1" min="0" title="문장삽입">
-                                    <input type="number" class="desc1-cnt" value="0" min="0" title="서술1">
-                                    <input type="number" class="desc2-cnt" value="0" min="0" title="서술2">
-                                    <input type="number" class="desc3-cnt" value="0" min="0" title="서술3">
+                                    <input type="number" class="desc1-cnt" value="0" min="0" title="단어배열">
+                                    <input type="number" class="desc2-cnt" value="0" min="0" title="어형변형">
+                                    <input type="number" class="desc3-cnt" value="0" min="0" title="통문장영작">
                                 </div>
                                 <div class="btn-group admin-only admin-only-flex">
                                     <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
@@ -333,30 +319,6 @@
                 document.getElementById('passage-list').innerHTML = "<p style='color:#ffb199;'>서버 통신 오류가 발생했습니다.</p>";
             }
         };
-
-        function buildHighlightPreview(sourceId, previewId, existingHighlights = []) {
-            const text = document.getElementById(sourceId).value;
-            const sents = text.split('\n').map(s=>s.trim()).filter(s=>s!=="");
-            const box = document.getElementById(previewId);
-            box.innerHTML = '';
-            
-            if(sents.length === 0) {
-                box.style.display = 'none';
-                alert("먼저 영어 지문을 입력해주세요.");
-                return;
-            }
-            
-            box.style.display = 'flex';
-            box.innerHTML = `<p style="font-size:12px; color:#fde047; margin:0 0 5px 0;">⭐ 서술형으로 자주 출제되는 문장을 클릭하여 하이라이트 지정하세요.</p>`;
-            sents.forEach((s, i) => {
-                const div = document.createElement('div');
-                div.className = 'highlight-item';
-                if(existingHighlights[i]) div.classList.add('active'); 
-                div.innerText = `[${i+1}] ${s}`;
-                div.onclick = function() { this.classList.toggle('active'); };
-                box.appendChild(div);
-            });
-        }
 
         function applyGlobal() {
             const order = document.getElementById('global-order').value;
@@ -486,19 +448,13 @@
             const content = document.getElementById('content').value;
             const translation = document.getElementById('translation').value;
             const folder = document.getElementById('folder').value;
-            
-            const box = document.getElementById('highlight-preview');
-            let highlights = [];
-            if(box.style.display !== 'none') {
-                highlights = Array.from(box.querySelectorAll('.highlight-item')).map(el => el.classList.contains('active'));
-            }
 
             if(!title || !content) return alert("제목과 내용을 입력해주세요.");
             
             const saveBtn = document.getElementById('save-btn');
             saveBtn.innerText = "업로드 중..."; saveBtn.disabled = true;
             try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content, translation, folder, highlights }) });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "save", title, content, translation, folder }) });
                 location.reload(); 
             } catch (e) { alert("저장 오류"); saveBtn.innerText = "DB에 업로드하기"; saveBtn.disabled = false; }
         }
@@ -520,8 +476,6 @@
                 document.getElementById('edit-folder').value = data.folder || "미분류";
                 document.getElementById('edit-content').value = data.content;
                 document.getElementById('edit-translation').value = data.translation || "";
-                
-                buildHighlightPreview('edit-content', 'edit-highlight-preview', data.highlights || []);
             } catch(e) { }
         }
 
@@ -533,17 +487,11 @@
             const folder = document.getElementById('edit-folder').value;
             const content = document.getElementById('edit-content').value;
             const trans = document.getElementById('edit-translation').value;
-            
-            const box = document.getElementById('edit-highlight-preview');
-            let highlights = [];
-            if(box.style.display !== 'none') {
-                highlights = Array.from(box.querySelectorAll('.highlight-item')).map(el => el.classList.contains('active'));
-            }
 
             if(!title || !content) return;
             document.getElementById('edit-submit-btn').disabled = true;
             try {
-                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content, translation: trans, folder, highlights }) });
+                await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update", id, title, content, translation: trans, folder }) });
                 location.reload();
             } catch (e) { document.getElementById('edit-submit-btn').disabled = false; }
         }
@@ -564,20 +512,22 @@
             }
         }
 
-        // [복구] 빠졌던 전송 로직 복구 완료 (모든 5개 입력값 서버로 전송)
+        // [복원] 서술형 문항의 모든 변수(desc1, desc2, desc3)를 안전하게 서버로 넘기도록 완벽 복구
         async function generateIntegratedQuiz() {
             const selected = [];
+            
             document.querySelectorAll('.passage-row').forEach(row => {
                 const chk = row.querySelector('.chk-item');
                 if(chk && chk.checked) {
-                    selected.push({ 
-                        id: chk.value, 
-                        order: row.querySelector('.order-cnt').value || 0, 
-                        insert: row.querySelector('.insert-cnt').value || 0,
-                        desc1: row.querySelector('.desc1-cnt').value || 0,
-                        desc2: row.querySelector('.desc2-cnt').value || 0,
-                        desc3: row.querySelector('.desc3-cnt').value || 0
-                    });
+                    let order = parseInt(row.querySelector('.order-cnt').value) || 0;
+                    let insert = parseInt(row.querySelector('.insert-cnt').value) || 0;
+                    let desc1 = parseInt(row.querySelector('.desc1-cnt').value) || 0;
+                    let desc2 = parseInt(row.querySelector('.desc2-cnt').value) || 0;
+                    let desc3 = parseInt(row.querySelector('.desc3-cnt').value) || 0;
+                    
+                    if(order !== 0 || insert !== 0 || desc1 !== 0 || desc2 !== 0 || desc3 !== 0) {
+                        selected.push({ id: chk.value, order, insert, desc1, desc2, desc3 });
+                    }
                 }
             });
             
@@ -627,7 +577,7 @@
                 margin: [15, 15, 15, 15], 
                 filename: fileName, 
                 image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: { scale: currentScale, useCORS: true }, 
+                html2canvas: { scale: currentScale, useCORS: true, scrollY: 0, scrollX: 0 }, 
                 jsPDF: { format: 'a4', orientation: 'portrait' },
                 pagebreak: { mode: ['css', 'legacy'] }
             }).from(element).save();
