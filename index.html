@@ -67,7 +67,7 @@
         .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
         .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
 
-        /* 관리자 전용 */
+        /* 관리자 전용 및 이동 버튼 */
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
         body.admin-mode div.admin-only-flex { display: flex !important; }
@@ -76,7 +76,9 @@
         body.admin-mode #main-app .header-row { grid-template-columns: 30px 1fr 200px 110px 40px; }
         .admin-trigger { position: fixed; bottom: 20px; right: 20px; background: transparent; border: none; font-size: 24px; opacity: 0.05; cursor: pointer; z-index: 9999; }
         .admin-trigger:hover { opacity: 0.8; }
-        .btn-move { background: rgba(255,255,255,0.1); border: none; color: #a5f3fc; padding: 2px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        .move-btn-group { display: flex; flex-direction: column; gap: 2px; }
+        .btn-move { background: rgba(255,255,255,0.1); border: none; color: #a5f3fc; padding: 2px; border-radius: 4px; cursor: pointer; font-size: 10px; transition: background 0.2s;}
+        .btn-move:hover { background: rgba(0, 242, 254, 0.3); }
 
         /* 서술형 인터랙티브 전용 */
         .solver-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -93,7 +95,7 @@
         .radio-label:hover { background: rgba(0, 242, 254, 0.1); }
         input[type="radio"], input[type="checkbox"] { width: 18px; height: 18px; accent-color: #00f2fe; cursor: pointer; }
 
-        /* 신규: 빈출 문장 지정 UI 스타일 */
+        /* 빈출 문장 지정 UI 스타일 */
         .sentence-preview { background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,215,0,0.3); max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 15px; }
         .preview-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border-bottom: 1px dashed rgba(255,255,255,0.1); cursor: pointer; transition: background 0.2s; border-radius: 6px; }
         .preview-item:hover { background: rgba(255,215,0,0.1); }
@@ -112,6 +114,7 @@
             body.admin-mode #main-app .passage-row { grid-template-columns: 30px 1fr 30px; }
             .input-group { grid-column: 1 / -1; justify-content: flex-start; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px; }
             .btn-group { grid-column: 1 / -1; }
+            .move-btn-group { grid-column: 3 / 4; grid-row: 1 / 2; }
             .hide-on-mobile { display: none !important; }
         }
     </style>
@@ -157,11 +160,12 @@
                         <input type="number" id="global-desc" placeholder="서술" value="1" title="서술형 배열">
                         <button class="btn-outline" onclick="applyGlobal()">적용</button>
                     </div>
+                    <button class="btn-outline admin-only admin-only-block" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7; margin-left: auto;">📁 현재 순서 고정</button>
                 </div>
                 
                 <div style="background: rgba(255,215,0,0.05); padding:15px; border-radius:12px; border: 1px solid rgba(255,215,0,0.2); margin-bottom: 20px;">
                     <p style="margin:0 0 10px 0; font-weight:bold; color:#ffd700;">⭐ 서술형 PDF 출제 옵션</p>
-                    <label class="radio-label"><input type="checkbox" id="pdf-freq-only"> 서술형 출제 시 <b>빈출 문장(⭐) 내에서만</b> 랜덤 출제 (체크 해제 시 전체 문장 중 랜덤)</label>
+                    <label class="radio-label"><input type="checkbox" id="pdf-freq-only"> 서술형 출제 시 <b>빈출 문장(⭐) 내에서만</b> 랜덤 출제</label>
                     <label class="radio-label"><input type="checkbox" id="pdf-freq-all" onchange="document.getElementById('pdf-freq-only').disabled = this.checked;"> 문항수 설정 무시하고 <b>지정된 빈출 문장(⭐) 전체</b>를 서술형으로 출제</label>
                 </div>
                 
@@ -269,31 +273,24 @@
         let solverQuestions = [];
         let currentQIndex = 0;
         let originalAnswerWords = [];
-
-        // 빈출 문장 상태 관리 배열
         let addFreqState = [];
         let editFreqState = [];
 
         window.onload = async () => {
             if (sessionStorage.getItem('admin_auth') === 'true') { isAdmin = true; document.body.classList.add('admin-mode'); }
             loadList();
-            
-            // 프리뷰 동기화 이벤트
             document.getElementById('content').addEventListener('input', () => renderPreview('content', 'translation', 'add-preview', addFreqState));
             document.getElementById('translation').addEventListener('input', () => renderPreview('content', 'translation', 'add-preview', addFreqState));
             document.getElementById('edit-content').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
-        // 빈출문장 렌더링 함수
         function renderPreview(engId, korId, containerId, stateArray) {
             const engLines = document.getElementById(engId).value.split('\n').map(s => s.trim()).filter(s => s !== "");
             const korLines = document.getElementById(korId).value.split('\n').map(s => s.trim());
             const container = document.getElementById(containerId);
             
             if(engLines.length === 0) { container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:13px; margin:10px;">문장을 입력하면 이곳에 나타납니다.</p>`; return; }
-            
-            // stateArray 크기 동기화
             while(stateArray.length < engLines.length) stateArray.push(false);
             if(stateArray.length > engLines.length) stateArray.length = engLines.length;
 
@@ -301,20 +298,10 @@
             engLines.forEach((eng, idx) => {
                 let kor = korLines[idx] || "(해석 없음)";
                 let isFreq = stateArray[idx];
-                
                 let div = document.createElement('div');
                 div.className = `preview-item ${isFreq ? 'is-freq' : ''}`;
-                div.onclick = () => {
-                    stateArray[idx] = !stateArray[idx];
-                    renderPreview(engId, korId, containerId, stateArray);
-                };
-                
-                div.innerHTML = `
-                    <div class="star-icon">${isFreq ? '★' : '☆'}</div>
-                    <div class="preview-text">
-                        <div class="preview-text-eng">${eng}</div>
-                        <div class="preview-text-kor">${kor}</div>
-                    </div>`;
+                div.onclick = () => { stateArray[idx] = !stateArray[idx]; renderPreview(engId, korId, containerId, stateArray); };
+                div.innerHTML = `<div class="star-icon">${isFreq ? '★' : '☆'}</div><div class="preview-text"><div class="preview-text-eng">${eng}</div><div class="preview-text-kor">${kor}</div></div>`;
                 container.appendChild(div);
             });
         }
@@ -344,7 +331,24 @@
                     mainHtml += `<div class="folder-header" onclick="toggleFolder('main-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="main-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'main')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="main-content-${folderIndex}" class="folder-content">`;
                     solveHtml += `<div class="folder-header" onclick="toggleFolder('solve-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="solve-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'solve')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="solve-content-${folderIndex}" class="folder-content">`;
                     items.forEach(item => {
-                        mainHtml += `<div class="passage-row" data-id="${item.id}"><input type="checkbox" class="chk-item-main" value="${item.id}"><span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span><div class="input-group"><label class="opt-label">순서</label><input type="number" class="order-cnt" value="1" min="0"><label class="opt-label">삽입</label><input type="number" class="insert-cnt" value="1" min="0"><label class="opt-label" style="color:#fca5a5;">서술</label><input type="number" class="desc-cnt" value="1" min="0"></div><div class="btn-group admin-only admin-only-flex"><button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button><button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button></div></div>`;
+                        mainHtml += `
+                            <div class="passage-row" data-id="${item.id}">
+                                <input type="checkbox" class="chk-item-main" value="${item.id}">
+                                <span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span>
+                                <div class="input-group">
+                                    <label class="opt-label">순서</label><input type="number" class="order-cnt" value="1" min="0">
+                                    <label class="opt-label">삽입</label><input type="number" class="insert-cnt" value="1" min="0">
+                                    <label class="opt-label" style="color:#fca5a5;">서술</label><input type="number" class="desc-cnt" value="1" min="0">
+                                </div>
+                                <div class="btn-group admin-only admin-only-flex">
+                                    <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">수정</button>
+                                    <button class="btn-sm btn-del" onclick="deletePassage('${item.id}')">삭제</button>
+                                </div>
+                                <div class="move-btn-group admin-only admin-only-flex">
+                                    <button class="btn-move" onclick="moveRow(this, -1)" title="위로 이동">▲</button>
+                                    <button class="btn-move" onclick="moveRow(this, 1)" title="아래로 이동">▼</button>
+                                </div>
+                            </div>`;
                         solveHtml += `<div class="passage-row passage-row-simple" data-id="${item.id}"><input type="checkbox" class="chk-item-solve" value="${item.id}"><span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span></div>`;
                     });
                     mainHtml += `</div>`; solveHtml += `</div>`; folderIndex++;
@@ -353,6 +357,49 @@
             } catch (err) {}
         }
 
+        /* ----- 순서 변경 및 저장 함수 (복구됨) ----- */
+        function moveRow(btn, direction) {
+            const row = btn.closest('.passage-row');
+            const parent = row.parentNode;
+            if (direction === -1 && row.previousElementSibling) {
+                parent.insertBefore(row, row.previousElementSibling);
+            } else if (direction === 1 && row.nextElementSibling) {
+                parent.insertBefore(row.nextElementSibling, row);
+            }
+            row.style.background = 'rgba(0, 242, 254, 0.2)';
+            setTimeout(() => { row.style.background = 'rgba(0,0,0,0.15)'; }, 300);
+        }
+
+        async function saveCurrentOrder() {
+            const orderedIds = [];
+            document.querySelectorAll('#main-app .passage-row[data-id]').forEach(row => {
+                const id = row.getAttribute('data-id');
+                if (id) orderedIds.push(id);
+            });
+            if (orderedIds.length === 0) return alert("저장할 지문 목록이 없습니다.");
+
+            const saveBtn = document.querySelector('button[onclick="saveCurrentOrder()"]');
+            saveBtn.innerText = "순서 고정 중...";
+            saveBtn.disabled = true;
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "reorder_passages", orderedIds: orderedIds })
+                });
+                const result = await res.json();
+                alert(result.message || "순서가 구글 시트에 정상 고정되었습니다!");
+                location.reload();
+            } catch(e) {
+                alert("순서 저장 중 서버 통신 오류가 발생했습니다.");
+            } finally {
+                saveBtn.innerText = "📁 현재 순서 고정";
+                saveBtn.disabled = false;
+            }
+        }
+        /* ------------------------------------------ */
+
         function toggleFolder(contentId) { const content = document.getElementById(contentId); content.style.display = content.style.display === "none" ? "block" : "none"; }
         function toggleFolderSelectAll(event, checkbox, type) { event.stopPropagation(); document.getElementById(checkbox.getAttribute('data-target')).querySelectorAll('.chk-item-' + type).forEach(chk => chk.checked = checkbox.checked); }
         function toggleSelectAll(type) { const isChecked = document.getElementById('select-all-' + type).checked; document.querySelectorAll(`.chk-item-${type}, #select-all-${type}`).forEach(chk => chk.checked = isChecked); }
@@ -360,7 +407,6 @@
         function updateFolderDropdowns() { ['folder', 'edit-folder'].forEach(id => { const sel = document.getElementById(id); if(!sel) return; const currentVal = sel.value; sel.innerHTML = ""; globalFolders.forEach(f => { const opt = document.createElement('option'); opt.value = opt.text = f; sel.appendChild(opt); }); if(globalFolders.has(currentVal)) sel.value = currentVal; }); }
         function createNewFolder() { const fName = prompt("새로운 폴더 이름:"); if (fName && fName.trim() !== "") { globalFolders.add(fName.trim()); updateFolderDropdowns(); document.getElementById('folder').value = fName.trim(); } }
         
-        // DB 저장 수정 삭제
         async function saveToDB() {
             const title = document.getElementById('title').value, content = document.getElementById('content').value, translation = document.getElementById('translation').value, folder = document.getElementById('folder').value;
             if(!title || !content) return alert("제목과 영어원문을 입력해주세요.");
@@ -376,8 +422,6 @@
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id); const data = await res.json();
                 document.getElementById('view-modal-title').innerText = `📖 ${data.title}`;
-                
-                // 빈출 문장 하이라이트 처리
                 let contentHtml = "", transHtml = "";
                 const engLines = data.content.split('\n'); const korLines = (data.translation||"").split('\n');
                 engLines.forEach((eng, idx) => {
@@ -409,7 +453,6 @@
             location.reload();
         }
 
-        // PDF 인쇄 (빈출 옵션 반영)
         async function generateIntegratedQuiz() {
             const selected = [];
             document.querySelectorAll('#main-app .chk-item-main:checked').forEach(chk => {
@@ -430,7 +473,6 @@
         }
         function downloadPDF() { window.scrollTo(0, 0); html2pdf().set({ margin: 15, filename: (document.getElementById('custom-main-title').value || '영어_문제') + '.pdf', html2canvas: { scale: 2 }, jsPDF: { format: 'a4', orientation: 'portrait' } }).from(document.getElementById('quiz-output')).save(); }
 
-        // 웹 서술형 학습
         function toggleSolveMode() {
             document.getElementById('random-count').disabled = !document.getElementById('mode-random').checked;
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
@@ -455,7 +497,7 @@
                     body: JSON.stringify({ action: "get_interactive_desc", passages: selectedIds, mode: mode, count: count }) 
                 });
                 const result = await res.json();
-                if(result.questions.length === 0) { alert("조건에 맞는 문장(3단어 이상, 해석 존재, 빈출 지정 여부 등)이 부족합니다."); closeSolver(); return; }
+                if(result.questions.length === 0) { alert("조건에 맞는 문장이 부족합니다."); closeSolver(); return; }
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
             } catch(e) { alert("문제 데이터 오류"); closeSolver(); }
         }
