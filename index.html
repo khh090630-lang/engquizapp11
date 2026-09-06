@@ -174,7 +174,11 @@
                         <input type="number" id="global-desc" placeholder="서술" value="1" title="서술형 배열">
                         <button class="btn-outline" onclick="applyGlobal()">적용</button>
                     </div>
-                    <button class="btn-outline admin-only admin-only-block" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7; margin-left: auto;">📁 현재 순서 고정</button>
+                    
+                    <div class="admin-only admin-only-flex" style="display:flex; gap:10px; margin-left:auto; flex-wrap: wrap;">
+                        <button class="btn-outline" onclick="deleteSelectedPassages()" style="background: rgba(245, 87, 108, 0.1); color: #f87171; border-color: #f87171;">🗑 선택 삭제</button>
+                        <button class="btn-outline" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7;">📁 현재 순서 고정</button>
+                    </div>
                 </div>
                 
                 <div style="background: rgba(255,215,0,0.05); padding:15px; border-radius:12px; border: 1px solid rgba(255,215,0,0.2); margin-bottom: 20px;">
@@ -330,7 +334,6 @@
 
         async function loadList() {
             try {
-                // [캐시 무효화 추가] 새로고침 시 항상 최신 데이터를 불러오게 함
                 const res = await fetch(GAS_URL + "?action=list&t=" + new Date().getTime()); 
                 const list = await res.json();
                 
@@ -412,6 +415,27 @@
             }
         }
 
+        // --- [신규 기능] 선택 일괄 삭제 기능 ---
+        async function deleteSelectedPassages() {
+            const selectedIds = [];
+            document.querySelectorAll('#main-app .chk-item-main:checked').forEach(chk => selectedIds.push(chk.value));
+            
+            if (selectedIds.length === 0) return alert("삭제할 지문을 먼저 체크박스로 선택해주세요.");
+            if (!confirm(`선택한 ${selectedIds.length}개의 지문을 영구적으로 일괄 삭제하시겠습니까?`)) return;
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "delete_batch", ids: selectedIds })
+                });
+                await res.json();
+                location.reload();
+            } catch (e) {
+                alert("삭제 중 오류가 발생했습니다.");
+            }
+        }
+
         function toggleFolder(contentId) { const content = document.getElementById(contentId); content.style.display = content.style.display === "none" ? "block" : "none"; }
         function toggleFolderSelectAll(event, checkbox, type) { event.stopPropagation(); document.getElementById(checkbox.getAttribute('data-target')).querySelectorAll('.chk-item-' + type).forEach(chk => chk.checked = checkbox.checked); }
         function toggleSelectAll(type) { const isChecked = document.getElementById('select-all-' + type).checked; document.querySelectorAll(`.chk-item-${type}, #select-all-${type}`).forEach(chk => chk.checked = isChecked); }
@@ -432,7 +456,6 @@
         async function openViewModal(id) {
             document.getElementById('view-modal').style.display = 'flex';
             try {
-                // [캐시 무효화 추가]
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id + "&t=" + new Date().getTime()); 
                 const data = await res.json();
                 document.getElementById('view-modal-title').innerText = `📖 ${data.title}`;
@@ -452,7 +475,6 @@
         async function openEditModal(id) {
             document.getElementById('edit-modal').style.display = 'flex'; document.getElementById('edit-id').value = id;
             try {
-                // [캐시 무효화 추가]
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id + "&t=" + new Date().getTime()); 
                 const data = await res.json();
                 document.getElementById('edit-title').value = data.title; document.getElementById('edit-folder').value = data.folder || "미분류";
