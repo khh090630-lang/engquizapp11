@@ -415,7 +415,6 @@
             }
         }
 
-        // --- [신규 기능] 선택 일괄 삭제 기능 ---
         async function deleteSelectedPassages() {
             const selectedIds = [];
             document.querySelectorAll('#main-app .chk-item-main:checked').forEach(chk => selectedIds.push(chk.value));
@@ -492,25 +491,74 @@
             location.reload();
         }
 
+        // [완벽 복구] 누락되었던 전송 로직 복원 완료
         async function generateIntegratedQuiz() {
             const selected = [];
+            // 화면 상의 순서(▲/▼ 이동 반영) 그대로 데이터 수집
             document.querySelectorAll('#main-app .chk-item-main:checked').forEach(chk => {
                 let row = chk.closest('.passage-row');
-                selected.push({ id: chk.value, order: row.querySelector('.order-cnt').value, insert: row.querySelector('.insert-cnt').value, desc: row.querySelector('.desc-cnt').value });
+                selected.push({ 
+                    id: chk.value, 
+                    order: row.querySelector('.order-cnt').value || 0, 
+                    insert: row.querySelector('.insert-cnt').value || 0, 
+                    desc: row.querySelector('.desc-cnt').value || 0 
+                });
             });
             if(selected.length === 0) return alert("출제할 지문을 선택해주세요.");
-            const quizDiv = document.getElementById('quiz-output'); quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 생성 중... ⚙️</h3>"; quizDiv.style.display = "block";
+            
+            const quizDiv = document.getElementById('quiz-output'); 
+            quizDiv.innerHTML = "<h3 style='text-align:center;'>AI가 생성 중... ⚙️</h3>"; 
+            quizDiv.style.display = "block";
             
             const pdfFreqOnly = document.getElementById('pdf-freq-only').checked;
             const pdfFreqAll = document.getElementById('pdf-freq-all').checked;
 
-            const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                body: JSON.stringify({ action: "generate_batch", passages: selected, mainTitle: document.getElementById('custom-main-title').value, freqOnly: pdfFreqOnly, freqAll: pdfFreqAll }) 
-            });
-            const result = await res.json();
-            quizDiv.innerHTML = result.html_content; document.getElementById('pdf-btn').style.display = "block";
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ 
+                        action: "generate_batch", 
+                        passages: selected, 
+                        mainTitle: document.getElementById('custom-main-title').value, 
+                        freqOnly: pdfFreqOnly, 
+                        freqAll: pdfFreqAll 
+                    }) 
+                });
+                const result = await res.json();
+                
+                if (result.status === "error") {
+                     quizDiv.innerHTML = `<p style='color:red;'>서버 오류: ${result.message}</p>`;
+                     return;
+                }
+                
+                quizDiv.innerHTML = result.html_content; 
+                document.getElementById('pdf-btn').style.display = "block";
+            } catch(e) {
+                quizDiv.innerHTML = "<p style='color:red;'>네트워크 또는 시스템 오류가 발생했습니다.</p>";
+            }
         }
-        function downloadPDF() { window.scrollTo(0, 0); html2pdf().set({ margin: 15, filename: (document.getElementById('custom-main-title').value || '영어_문제') + '.pdf', html2canvas: { scale: 2 }, jsPDF: { format: 'a4', orientation: 'portrait' } }).from(document.getElementById('quiz-output')).save(); }
+        
+        // [완벽 복구] 55페이지 백지 방지 동적 해상도 적용 & 페이지 넘김 호환성 복구
+        function downloadPDF() { 
+            window.scrollTo(0, 0); 
+            let titleInput = document.getElementById('custom-main-title').value.trim();
+            let fileName = titleInput ? titleInput + '.pdf' : '영어_문제.pdf';
+            let element = document.getElementById('quiz-output');
+            
+            let currentScale = 2; 
+            if (element.clientHeight > 15000) currentScale = 1;
+            else if (element.clientHeight > 8000) currentScale = 1.5;
+            
+            html2pdf().set({ 
+                margin: 15, 
+                filename: fileName, 
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: currentScale, useCORS: true, scrollY: 0 }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            }).from(element).save(); 
+        }
 
         function toggleSolveMode() {
             document.getElementById('random-count').disabled = !document.getElementById('mode-random').checked;
