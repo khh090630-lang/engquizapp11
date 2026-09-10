@@ -64,15 +64,16 @@
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
         
         /* 
-           [핵심 수정] margin-bottom을 삭제하고 padding-bottom으로 우회합니다.
-           html2canvas가 margin 여백을 무시해서 가위질 위치를 착각하는 것을 방지합니다. 
+           [핵심 해결] html2pdf의 페이지 잘림 버그 방지를 위한 CSS 강제 적용
+           margin-bottom을 없애고 padding-bottom으로 우회하여 박스 높이 계산 오류를 방지합니다.
         */
         .q-box { 
             display: block; 
             width: 100%; 
+            page-break-inside: avoid;
             break-inside: avoid; 
-            page-break-inside: avoid; 
-            padding-bottom: 45px; /* margin 대신 padding 적용 */
+            margin-bottom: 0px !important; 
+            padding-bottom: 55px; /* 기존 margin 45px + padding 10px 통합 */
             font-size: 13.5px; 
             line-height: 1.6; 
         }
@@ -524,7 +525,7 @@
             quizDiv.innerHTML = result.html_content; document.getElementById('pdf-btn').style.display = "block";
         }
         
-        // [수정] JS를 이용해 명시적으로 page-break를 삽입하도록 변경하고, page-break-inside를 avoid-all이 아닌 안전한 CSS 속성으로만 제어합니다.
+        /* [핵심 설정] PDF가 문제 박스를 중간에 자르지 않도록 html2pdf 제어 명령 추가 */
         function downloadPDF() { 
             window.scrollTo(0, 0); 
             let titleInput = document.getElementById('custom-main-title').value.trim();
@@ -541,7 +542,8 @@
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: currentScale, useCORS: true, scrollY: 0 }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] } 
+                /* [해결] pagebreak 모드에 avoid-all 대신 구체적으로 .q-box 클래스를 지정하여 회피 명령 전달 */
+                pagebreak: { mode: ['css', 'legacy'], avoid: ['.q-box'] } 
             }).from(element).save(); 
         }
 
