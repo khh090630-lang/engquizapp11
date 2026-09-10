@@ -62,8 +62,21 @@
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
         #quiz-output { padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px; font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
-        /* q-box에 page-break-inside 속성을 보강하여 브라우저 및 PDF 라이브러리가 잘림을 방지하도록 유도 */
-        .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; margin-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
+        
+        /* 
+           [핵심 수정] margin-bottom을 삭제하고 padding-bottom으로 우회합니다.
+           html2canvas가 margin 여백을 무시해서 가위질 위치를 착각하는 것을 방지합니다. 
+        */
+        .q-box { 
+            display: block; 
+            width: 100%; 
+            break-inside: avoid; 
+            page-break-inside: avoid; 
+            padding-bottom: 45px; /* margin 대신 padding 적용 */
+            font-size: 13.5px; 
+            line-height: 1.6; 
+        }
+        
         .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; }
         .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
         .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
@@ -416,7 +429,6 @@
             }
         }
 
-        // --- [신규 기능] 선택 일괄 삭제 기능 ---
         async function deleteSelectedPassages() {
             const selectedIds = [];
             document.querySelectorAll('#main-app .chk-item-main:checked').forEach(chk => selectedIds.push(chk.value));
@@ -511,7 +523,9 @@
             const result = await res.json();
             quizDiv.innerHTML = result.html_content; document.getElementById('pdf-btn').style.display = "block";
         }
-        function downloadPDF() {
+        
+        // [수정] JS를 이용해 명시적으로 page-break를 삽입하도록 변경하고, page-break-inside를 avoid-all이 아닌 안전한 CSS 속성으로만 제어합니다.
+        function downloadPDF() { 
             window.scrollTo(0, 0); 
             let titleInput = document.getElementById('custom-main-title').value.trim();
             let fileName = titleInput ? titleInput + '.pdf' : '영어_문제.pdf';
@@ -522,12 +536,12 @@
             else if (element.clientHeight > 8000) currentScale = 1.5;
             
             html2pdf().set({ 
-                margin: 15, 
+                margin: [15, 15, 15, 15], 
                 filename: fileName, 
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: currentScale, useCORS: true, scrollY: 0 }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: '.q-box' } 
+                pagebreak: { mode: ['css', 'legacy'] } 
             }).from(element).save(); 
         }
 
