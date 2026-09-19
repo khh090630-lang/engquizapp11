@@ -213,7 +213,6 @@
                 <h2>💻 서술형 집중 학습실</h2>
                 
                 <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-                    <!-- [추가] 학습 기록 현황 대시보드 -->
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
                         <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 누적 학습 현황</span>
                         <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
@@ -323,7 +322,7 @@
         let addFreqState = [];
         let editFreqState = [];
         let isSortableInit = false; 
-        let allValidEngData = []; // [추가] 글로벌 학습 통계를 위한 배열
+        let allValidEngData = [];
 
         window.onload = async () => {
             if (sessionStorage.getItem('admin_auth') === 'true') { isAdmin = true; document.body.classList.add('admin-mode'); }
@@ -334,7 +333,6 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
-        // [추가] 학습 기록 대시보드 갱신
         function updateLearningStats() {
             if (!allValidEngData || allValidEngData.length === 0) return;
             let history = JSON.parse(localStorage.getItem('learningHistory') || '{}');
@@ -355,7 +353,6 @@
             document.getElementById('stat-rate').innerText = rate + "%";
         }
 
-        // [추가] 학습 기록 초기화
         function resetLearningHistory() {
             if(confirm("모든 학습 기록(정답/오답)을 초기화하시겠습니까?")) {
                 localStorage.removeItem('learningHistory');
@@ -401,10 +398,9 @@
                 const res = await fetch(GAS_URL + "?action=list&t=" + new Date().getTime()); 
                 const resData = await res.json();
                 
-                // [수정] 서버에서 전체 유효 문장 목록(allValidEng)을 받아옵니다.
                 const list = resData.list ? resData.list : resData;
                 allValidEngData = resData.allValidEng || [];
-                updateLearningStats(); // 학습 현황 갱신
+                updateLearningStats(); 
 
                 const mainContainer = document.getElementById('passage-list'), solveContainer = document.getElementById('solve-passage-list');
                 mainContainer.innerHTML = solveContainer.innerHTML = "";
@@ -595,7 +591,7 @@
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: currentScale, useCORS: true, scrollY: 0 }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: '.q-box' } 
+                pagebreak: { mode: ['css', 'legacy'] } 
             }).from(element).save(); 
         }
 
@@ -604,6 +600,7 @@
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
         }
 
+        // [핵심 변경] 서버의 에러를 정상적으로 캐치하기 위해 예외 처리를 보강
         async function startInteractiveSolving() {
             const selectedIds = [];
             document.querySelectorAll('#solve-passage-list .chk-item-solve:checked').forEach(chk => selectedIds.push(chk.value));
@@ -647,9 +644,24 @@
                     }) 
                 });
                 const result = await res.json();
-                if(result.questions.length === 0) { alert("조건에 맞는 문장이 없습니다. 필터를 확인해주세요."); closeSolver(); return; }
+                
+                // [안전 장치 추가] 서버가 에러를 리턴했을 경우 처리
+                if (result.status === "error") {
+                    alert("서버 통신 오류: " + result.message);
+                    closeSolver();
+                    return;
+                }
+                
+                if(!result.questions || result.questions.length === 0) { 
+                    alert("선택하신 조건에 맞는 문장이 없습니다.\n(미학습, 오답 등의 필터를 확인해주세요)"); 
+                    closeSolver(); 
+                    return; 
+                }
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
-            } catch(e) { alert("문제 데이터 오류"); closeSolver(); }
+            } catch(e) { 
+                alert("문제 출제 중 알 수 없는 에러가 발생했습니다."); 
+                closeSolver(); 
+            }
         }
 
         function renderInteractiveQuestion() {
