@@ -332,8 +332,8 @@
     </div>
 
     <script>
-        // [중요] 반드시 새로 배포한 웹 앱 URL로 교체해야 합니다!
-        const GAS_URL = "여기에_새_URL_붙여넣기";
+        // [중요] 새로 배포한 웹 앱 URL을 반드시 여기에 붙여넣어 주세요!
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxN8aH1tvgARagzegJSEFDRz86P639CvBu4IFl8miIJz2sC4VTnNZo_xFgK64G5C-MC/exec";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -347,7 +347,6 @@
         let globalCategorizedData = null; 
         let sessionHistoryUpdates = []; 
 
-        // [방어막 추가] 혹시라도 브라우저 설정으로 인해 스토리지가 차단되어 있어도 사이트가 멈추지 않도록 예외 처리
         window.onload = async () => {
             try {
                 if (sessionStorage.getItem('admin_auth') === 'true') { 
@@ -451,6 +450,23 @@
             else if (tabId === 'solver') { document.getElementById('top-nav').style.display = 'none'; document.getElementById('solver-app').style.display = 'block'; }
         }
 
+        // [핵심 변경] 서버의 진짜 데이터를 가져와서 화면에 직접 적용하는 로직
+        function updateLearningStats() {
+            if (!globalCategorizedData) return;
+            
+            let correct = globalCategorizedData.correct ? globalCategorizedData.correct.length : 0;
+            let incorrect = globalCategorizedData.incorrect ? globalCategorizedData.incorrect.length : 0;
+            let unlearned = globalCategorizedData.unlearned ? globalCategorizedData.unlearned.length : 0;
+            
+            let total = correct + incorrect + unlearned;
+            let rate = total === 0 ? 0 : Math.floor(((correct + incorrect) / total) * 100);
+            
+            document.getElementById('stat-unlearned').innerText = unlearned;
+            document.getElementById('stat-correct').innerText = correct;
+            document.getElementById('stat-incorrect').innerText = incorrect;
+            document.getElementById('stat-rate').innerText = rate + "%";
+        }
+
         async function loadList() {
             try {
                 const res = await fetch(GAS_URL + "?action=list&t=" + new Date().getTime()); 
@@ -458,16 +474,12 @@
                 const resData = await res.json();
                 
                 const list = resData.list ? resData.list : resData;
+                
+                // 서버에서 넘겨받은 실제 통계 데이터를 저장
                 globalCategorizedData = resData.categorized || { unlearned: [], correct: [], incorrect: [] };
                 
-                if (resData.stats) {
-                    document.getElementById('stat-unlearned').innerText = resData.stats.unlearned;
-                    document.getElementById('stat-correct').innerText = resData.stats.correct;
-                    document.getElementById('stat-incorrect').innerText = resData.stats.incorrect;
-                    let total = resData.stats.correct + resData.stats.incorrect + resData.stats.unlearned;
-                    let rate = total === 0 ? 0 : Math.floor(((resData.stats.correct + resData.stats.incorrect) / total) * 100);
-                    document.getElementById('stat-rate').innerText = rate + "%";
-                }
+                // 로컬 데이터 무시하고 즉각 화면에 적용
+                updateLearningStats(); 
 
                 const mainContainer = document.getElementById('passage-list'), solveContainer = document.getElementById('solve-passage-list');
                 mainContainer.innerHTML = solveContainer.innerHTML = "";
