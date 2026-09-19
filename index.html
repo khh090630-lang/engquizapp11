@@ -65,10 +65,9 @@
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
         
         .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; padding-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
-        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
-        .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
-        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
+        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
+        .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
@@ -218,11 +217,21 @@
                         <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 누적 학습 현황</span>
                         <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
                     </div>
+                    
+                    <!-- [추가] 각 항목을 클릭할 수 있도록 onclick 추가 및 커서 포인터, 호버 효과 적용 -->
                     <div style="display:flex; justify-content:space-around; background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin: 10px 0; width: 100%; text-align:center; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
-                        <div><span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="stat-unlearned" style="color:#e0f8ff; font-size:20px;">0</b></div>
-                        <div><span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="stat-correct" style="color:#34d399; font-size:20px;">0</b></div>
-                        <div><span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="stat-incorrect" style="color:#f87171; font-size:20px;">0</b></div>
-                        <div><span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="stat-rate" style="color:#fbbf24; font-size:20px;">0%</b></div>
+                        <div onclick="openHistoryModal('unlearned')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="stat-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                        </div>
+                        <div onclick="openHistoryModal('correct')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="stat-correct" style="color:#34d399; font-size:20px;">0</b>
+                        </div>
+                        <div onclick="openHistoryModal('incorrect')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="stat-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                        </div>
+                        <div>
+                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="stat-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                        </div>
                     </div>
 
                     <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
@@ -311,6 +320,17 @@
         </div>
     </div>
 
+    <!-- [추가] 학습 기록 리스트를 보여줄 팝업 모달 -->
+    <div class="modal-overlay" id="history-modal">
+        <div class="card modal-box" style="max-width: 800px;">
+            <h2 id="history-modal-title" style="margin-bottom: 20px;">📖 학습 기록 상세</h2>
+            <div id="history-modal-content" class="sentence-preview" style="max-height: 400px; padding: 15px; background: rgba(0,0,0,0.3);"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeHistoryModal()" style="background: #3b82f6; color: white; border: none; width: 100px;">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw053Q9gYo8v8dbUJK0O1ej1VJKjMTh9dpp5rlN0MdYcm6qRDXOonIOfB5hiTdvWNA5/exec";
         const ADMIN_PASSWORD = "loveng090630";
@@ -334,7 +354,6 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
-        // [핵심 변경] 데이터 훼손 방지를 위해 안전한 로컬 스토리지 읽기 전용 함수를 생성했습니다.
         function getSafeHistory() {
             try {
                 let data = localStorage.getItem('learningHistory');
@@ -345,14 +364,16 @@
             }
         }
 
+        // [수정] updateLearningStats에서 객체(item.eng)를 참조하도록 변경
         function updateLearningStats() {
             if (!allValidEngData || allValidEngData.length === 0) return;
             let history = getSafeHistory();
             let correct = 0, incorrect = 0, unlearned = 0;
             
-            allValidEngData.forEach(eng => {
-                if(history[eng] === 'correct') correct++;
-                else if(history[eng] === 'incorrect') incorrect++;
+            allValidEngData.forEach(item => {
+                let status = history[item.eng] || 'unlearned';
+                if(status === 'correct') correct++;
+                else if(status === 'incorrect') incorrect++;
                 else unlearned++;
             });
             
@@ -371,6 +392,49 @@
                 updateLearningStats();
                 alert("초기화되었습니다.");
             }
+        }
+
+        // [추가] 기록 클릭 시 모달창 띄우기 함수
+        function openHistoryModal(type) {
+            let history = getSafeHistory();
+            let filteredList = [];
+            
+            allValidEngData.forEach(item => {
+                let status = history[item.eng] || 'unlearned';
+                if(status === type) filteredList.push(item);
+            });
+            
+            const titles = { 
+                'unlearned': '🔍 미학습 문장 목록', 
+                'correct': '✅ 정답 문장 목록', 
+                'incorrect': '❌ 오답 문장 목록' 
+            };
+            
+            document.getElementById('history-modal-title').innerText = titles[type] + ` (${filteredList.length}개)`;
+            
+            let htmlStr = "";
+            if(filteredList.length === 0) {
+                htmlStr = `<p style="text-align:center; color:#94a3b8; margin-top:20px;">해당하는 문장이 없습니다.</p>`;
+            } else {
+                filteredList.forEach(item => {
+                    htmlStr += `
+                        <div class="preview-item ${item.isFreq ? 'is-freq' : ''}" style="cursor:default; margin-bottom: 10px; background: rgba(255,255,255,0.03);">
+                            <div class="star-icon">${item.isFreq ? '★' : '☆'}</div>
+                            <div class="preview-text">
+                                <div class="preview-text-eng" style="font-size: 14px;">${item.eng}</div>
+                                <div class="preview-text-kor" style="font-size: 13px;">${item.trans}</div>
+                            </div>
+                        </div>`;
+                });
+            }
+            
+            document.getElementById('history-modal-content').innerHTML = htmlStr;
+            document.getElementById('history-modal').style.display = 'flex';
+        }
+
+        // [추가] 기록 모달창 닫기 함수
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
         }
 
         function renderPreview(engId, korId, containerId, stateArray) {
@@ -612,7 +676,6 @@
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
         }
 
-        // [핵심 변경] 에러 발생 시 그 이유를 화면에 명확하게 출력하고 캐시/데이터를 방어하도록 설계했습니다.
         async function startInteractiveSolving() {
             const selectedIds = [];
             document.querySelectorAll('#solve-passage-list .chk-item-solve:checked').forEach(chk => selectedIds.push(chk.value));
