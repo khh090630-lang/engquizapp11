@@ -65,9 +65,10 @@
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
         
         .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; padding-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
-        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
-        .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
+        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
+        .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
+        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
@@ -311,7 +312,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw053Q9gYo8v8dbUJK0O1ej1VJKjMTh9dpp5rlN0MdYcm6qRDXOonIOfB5hiTdvWNA5/exec";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -333,9 +334,20 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
+        // [핵심 변경] 데이터 훼손 방지를 위해 안전한 로컬 스토리지 읽기 전용 함수를 생성했습니다.
+        function getSafeHistory() {
+            try {
+                let data = localStorage.getItem('learningHistory');
+                return data ? JSON.parse(data) : {};
+            } catch(e) {
+                localStorage.removeItem('learningHistory');
+                return {};
+            }
+        }
+
         function updateLearningStats() {
             if (!allValidEngData || allValidEngData.length === 0) return;
-            let history = JSON.parse(localStorage.getItem('learningHistory') || '{}');
+            let history = getSafeHistory();
             let correct = 0, incorrect = 0, unlearned = 0;
             
             allValidEngData.forEach(eng => {
@@ -600,7 +612,7 @@
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
         }
 
-        // [핵심 변경] 서버의 에러를 정상적으로 캐치하기 위해 예외 처리를 보강
+        // [핵심 변경] 에러 발생 시 그 이유를 화면에 명확하게 출력하고 캐시/데이터를 방어하도록 설계했습니다.
         async function startInteractiveSolving() {
             const selectedIds = [];
             document.querySelectorAll('#solve-passage-list .chk-item-solve:checked').forEach(chk => selectedIds.push(chk.value));
@@ -612,7 +624,7 @@
             else if (document.getElementById('mode-freq-random').checked) { mode = 'freq-random'; count = document.getElementById('freq-random-count').value; }
 
             const historyFilter = document.querySelector('input[name="history-filter"]:checked').value;
-            const historyData = JSON.parse(localStorage.getItem('learningHistory') || '{}');
+            const historyData = getSafeHistory();
 
             switchTab('solver');
             document.getElementById('solver-kor').innerText = "서버에서 문제를 구성하고 있습니다... 잠시만 기다려주세요.";
@@ -633,7 +645,9 @@
             }
 
             try {
-                const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
                     body: JSON.stringify({ 
                         action: "get_interactive_desc", 
                         passages: selectedIds, 
@@ -643,13 +657,21 @@
                         historyData: historyData
                     }) 
                 });
-                const result = await res.json();
                 
-                // [안전 장치 추가] 서버가 에러를 리턴했을 경우 처리
+                if (!res.ok) {
+                    throw new Error("HTTP 접속 오류 (" + res.status + ")");
+                }
+                
+                const responseText = await res.text();
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch(parseErr) {
+                    throw new Error("서버 응답을 읽을 수 없습니다.\n앱스 스크립트 새버전 배포가 필요합니다.");
+                }
+
                 if (result.status === "error") {
-                    alert("서버 통신 오류: " + result.message);
-                    closeSolver();
-                    return;
+                    throw new Error("서버 내부 통신 에러: " + result.message);
                 }
                 
                 if(!result.questions || result.questions.length === 0) { 
@@ -657,9 +679,10 @@
                     closeSolver(); 
                     return; 
                 }
+                
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
             } catch(e) { 
-                alert("문제 출제 중 알 수 없는 에러가 발생했습니다."); 
+                alert("문제 출제 실패:\n" + e.message + "\n\n💡 브라우저 캐시를 비우거나 (Ctrl+Shift+R) 관리자에게 문의하세요."); 
                 closeSolver(); 
             }
         }
@@ -695,7 +718,7 @@
             const resDiv = document.getElementById('solver-result'); 
             resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
             
-            let history = JSON.parse(localStorage.getItem('learningHistory') || '{}');
+            let history = getSafeHistory();
             const rawEng = solverQuestions[currentQIndex].original;
 
             if (userStr === correctStr) { 
