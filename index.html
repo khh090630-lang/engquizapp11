@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 영어 문제 은행</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- [추가] 모바일/PC 드래그 앤 드롭 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -64,11 +63,11 @@
         .btn-cancel { background: transparent; border: 1px solid #00f2fe; color: #00f2fe; }
         #quiz-output { padding: 40px; background: white; color: black; border-radius: 12px; display: none; margin-top: 30px; font-family: 'Batang', 'Malgun Gothic', serif; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
-        .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; margin-bottom: 45px; padding-bottom: 10px; font-size: 13.5px; line-height: 1.6; }
-        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
-        .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
-        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
+        
+        .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; padding-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
+        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
+        .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
@@ -86,7 +85,6 @@
         .solver-kor { font-size: 18px; font-weight: bold; background: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 20px; line-height: 1.6; border-left: 5px solid #00f2fe; }
         .answer-dropzone { min-height: 80px; border: 2px dashed #00f2fe; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: rgba(0, 242, 254, 0.05); }
         
-        /* [추가/수정] 드래그 앤 드롭을 위한 마우스 커서 및 고스트 애니메이션 속성 */
         .word-chip { background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 15px; border-radius: 8px; cursor: grab; font-size: 16px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s, background 0.2s; user-select: none; }
         .word-chip:hover { background: #3b82f6; transform: translateY(-2px); }
         .word-chip:active { cursor: grabbing; }
@@ -250,8 +248,11 @@
                 <div id="answer-dropzone" class="answer-dropzone"></div>
                 <div id="word-pool" class="word-pool"></div>
                 <div id="solver-result" class="solver-result"></div>
-                <div class="solver-actions">
-                    <button id="btn-check" onclick="checkInteractiveAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
+                
+                <!-- [수정] 다시 풀기 버튼을 액션 영역에 추가 -->
+                <div class="solver-actions" style="display: flex; gap: 10px;">
+                    <button id="btn-check" onclick="checkInteractiveAnswer()" style="flex:1; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
+                    <button id="btn-retry" onclick="retryInteractiveQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
                     <button id="btn-next" onclick="loadNextInteractive()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
                 </div>
             </div>
@@ -298,7 +299,7 @@
         let originalAnswerWords = [];
         let addFreqState = [];
         let editFreqState = [];
-        let isSortableInit = false; // [추가] 드래그 앤 드롭 중복 초기화 방지
+        let isSortableInit = false; 
 
         window.onload = async () => {
             if (sessionStorage.getItem('admin_auth') === 'true') { isAdmin = true; document.body.classList.add('admin-mode'); }
@@ -558,7 +559,6 @@
             document.getElementById('solver-kor').innerText = "서버에서 문제를 구성하고 있습니다... 잠시만 기다려주세요.";
             document.getElementById('answer-dropzone').innerHTML = ''; document.getElementById('word-pool').innerHTML = '';
 
-            // [추가] SortableJS 드래그 앤 드롭 초기화
             if (!isSortableInit) {
                 Sortable.create(document.getElementById('word-pool'), {
                     group: 'shared', 
@@ -589,7 +589,13 @@
             document.getElementById('solver-kor').innerText = q.kor;
             const dropzone = document.getElementById('answer-dropzone'), pool = document.getElementById('word-pool');
             dropzone.innerHTML = ''; pool.innerHTML = '';
-            document.getElementById('solver-result').style.display = 'none'; document.getElementById('btn-check').style.display = 'block'; document.getElementById('btn-next').style.display = 'none';
+            
+            // [수정] 다시 풀기 버튼 숨기기
+            document.getElementById('solver-result').style.display = 'none'; 
+            document.getElementById('btn-check').style.display = 'block'; 
+            document.getElementById('btn-next').style.display = 'none';
+            document.getElementById('btn-retry').style.display = 'none';
+
             originalAnswerWords = q.original.replace(/[.,!?]/g, '').trim().split(/\s+/);
             q.shuffled.forEach(word => { let chip = document.createElement('div'); chip.className = 'word-chip'; chip.innerText = word; chip.onclick = () => moveWord(chip); pool.appendChild(chip); });
         }
@@ -607,9 +613,21 @@
             const resDiv = document.getElementById('solver-result'); resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
             if (userStr === correctStr) { resDiv.innerText = "🎉 완벽합니다!"; resDiv.classList.add('correct-anim'); } 
             else { resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span>`; resDiv.classList.add('wrong-anim'); }
+            
+            // [수정] 정답 확인 후 다음 문제와 다시 풀기 버튼 동시 노출
             document.getElementById('btn-check').style.display = 'none';
-            let nextBtn = document.getElementById('btn-next'); nextBtn.style.display = 'block'; nextBtn.innerText = (currentQIndex < solverQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
+            document.getElementById('btn-retry').style.display = 'block';
+            
+            let nextBtn = document.getElementById('btn-next'); 
+            nextBtn.style.display = 'block'; 
+            nextBtn.innerText = (currentQIndex < solverQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
         }
+
+        // [추가] 다시 풀기 기능 실행
+        function retryInteractiveQuestion() {
+            renderInteractiveQuestion();
+        }
+
         function loadNextInteractive() { if (currentQIndex < solverQuestions.length - 1) { currentQIndex++; renderInteractiveQuestion(); } else { alert("학습을 완료했습니다!"); closeSolver(); } }
         function closeSolver() { switchTab('solve-setup'); }
     </script>
