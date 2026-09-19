@@ -65,9 +65,10 @@
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
         
         .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; padding-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
-        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
-        .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
+        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
+        .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
+        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
@@ -331,8 +332,8 @@
     </div>
 
     <script>
-        // [중요] 새로 배포한 웹 앱 URL을 반드시 여기에 붙여넣어 주세요!
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyQzR0E2lumxSA8kxTMCfjUEkI4KY3j_A9-apnaJccUiQTkqDGFtKswg8mTLaqKkyx1/exec";
+        // [중요] 반드시 새로 배포한 웹 앱 URL로 교체해야 합니다!
+        const GAS_URL = "여기에_새_URL_붙여넣기";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -346,9 +347,19 @@
         let globalCategorizedData = null; 
         let sessionHistoryUpdates = []; 
 
+        // [방어막 추가] 혹시라도 브라우저 설정으로 인해 스토리지가 차단되어 있어도 사이트가 멈추지 않도록 예외 처리
         window.onload = async () => {
-            if (sessionStorage.getItem('admin_auth') === 'true') { isAdmin = true; document.body.classList.add('admin-mode'); }
+            try {
+                if (sessionStorage.getItem('admin_auth') === 'true') { 
+                    isAdmin = true; 
+                    document.body.classList.add('admin-mode'); 
+                }
+            } catch(e) {
+                console.warn("Storage restricted by browser.");
+            }
+            
             loadList();
+            
             document.getElementById('content').addEventListener('input', () => renderPreview('content', 'translation', 'add-preview', addFreqState));
             document.getElementById('translation').addEventListener('input', () => renderPreview('content', 'translation', 'add-preview', addFreqState));
             document.getElementById('edit-content').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
@@ -440,7 +451,6 @@
             else if (tabId === 'solver') { document.getElementById('top-nav').style.display = 'none'; document.getElementById('solver-app').style.display = 'block'; }
         }
 
-        // [핵심 변경] 서버의 에러를 정상적으로 캐치하기 위해 예외 처리를 보강
         async function loadList() {
             try {
                 const res = await fetch(GAS_URL + "?action=list&t=" + new Date().getTime()); 
@@ -494,7 +504,6 @@
                 }
                 mainContainer.innerHTML = mainHtml; solveContainer.innerHTML = solveHtml;
             } catch (err) {
-                // 에러 발생 시 안내 메시지 표출
                 document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>데이터를 불러오지 못했습니다.<br>새로운 배포 URL을 적용했는지 확인해주세요.</p>";
                 document.getElementById('solve-passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>데이터를 불러오지 못했습니다.</p>";
             }
