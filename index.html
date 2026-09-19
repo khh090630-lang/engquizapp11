@@ -212,8 +212,24 @@
             <div class="card">
                 <h2>💻 서술형 집중 학습실</h2>
                 <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                    
+                    <!-- [추가] 학습 기록 필터 UI -->
+                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 학습 기록 필터:</span>
+                        <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <label class="radio-label"><input type="radio" name="history-filter" value="all" checked> 전체 문제</label>
+                        <label class="radio-label"><input type="radio" name="history-filter" value="unlearned"> 미학습</label>
+                        <label class="radio-label"><input type="radio" name="history-filter" value="learned_all"> 학습 완료(전체)</label>
+                        <label class="radio-label"><input type="radio" name="history-filter" value="learned_correct"> 정답만</label>
+                        <label class="radio-label"><input type="radio" name="history-filter" value="learned_incorrect"> 오답만</label>
+                    </div>
+                    
+                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+
                     <label class="radio-label"><input type="radio" name="solve-mode" id="mode-all" value="all" checked onchange="toggleSolveMode()">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문의 <span style="color:#fca5a5;">모든 문장</span> 순서대로 학습</span>
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문의 <span style="color:#fca5a5;">모든 문장</span> 학습</span>
                     </label>
                     <label class="radio-label"><input type="radio" name="solve-mode" id="mode-random" value="random" onchange="toggleSolveMode()">
                         <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문 전체 중 랜덤 출제: </span>
@@ -248,10 +264,8 @@
                 <div id="answer-dropzone" class="answer-dropzone"></div>
                 <div id="word-pool" class="word-pool"></div>
                 <div id="solver-result" class="solver-result"></div>
-                
-                <!-- [수정] 다시 풀기 버튼을 액션 영역에 추가 -->
                 <div class="solver-actions" style="display: flex; gap: 10px;">
-                    <button id="btn-check" onclick="checkInteractiveAnswer()" style="flex:1; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
+                    <button id="btn-check" onclick="checkInteractiveAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
                     <button id="btn-retry" onclick="retryInteractiveQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
                     <button id="btn-next" onclick="loadNextInteractive()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
                 </div>
@@ -309,6 +323,14 @@
             document.getElementById('edit-content').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
+
+        // [추가] 학습 기록 초기화
+        function resetLearningHistory() {
+            if(confirm("모든 학습 기록(정답/오답)을 초기화하시겠습니까?")) {
+                localStorage.removeItem('learningHistory');
+                alert("초기화되었습니다.");
+            }
+        }
 
         function renderPreview(engId, korId, containerId, stateArray) {
             const engLines = document.getElementById(engId).value.split('\n').map(s => s.trim()).filter(s => s !== "");
@@ -555,6 +577,10 @@
             else if (document.getElementById('mode-freq-all').checked) { mode = 'freq-all'; }
             else if (document.getElementById('mode-freq-random').checked) { mode = 'freq-random'; count = document.getElementById('freq-random-count').value; }
 
+            // [추가] 학습 기록 필터 옵션 읽기
+            const historyFilter = document.querySelector('input[name="history-filter"]:checked').value;
+            const historyData = JSON.parse(localStorage.getItem('learningHistory') || '{}');
+
             switchTab('solver');
             document.getElementById('solver-kor').innerText = "서버에서 문제를 구성하고 있습니다... 잠시만 기다려주세요.";
             document.getElementById('answer-dropzone').innerHTML = ''; document.getElementById('word-pool').innerHTML = '';
@@ -574,8 +600,16 @@
             }
 
             try {
+                // [추가] 백엔드로 히스토리 정보 전송
                 const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: "get_interactive_desc", passages: selectedIds, mode: mode, count: count }) 
+                    body: JSON.stringify({ 
+                        action: "get_interactive_desc", 
+                        passages: selectedIds, 
+                        mode: mode, 
+                        count: count,
+                        historyFilter: historyFilter,
+                        historyData: historyData
+                    }) 
                 });
                 const result = await res.json();
                 if(result.questions.length === 0) { alert("조건에 맞는 문장이 부족합니다."); closeSolver(); return; }
@@ -590,7 +624,6 @@
             const dropzone = document.getElementById('answer-dropzone'), pool = document.getElementById('word-pool');
             dropzone.innerHTML = ''; pool.innerHTML = '';
             
-            // [수정] 다시 풀기 버튼 숨기기
             document.getElementById('solver-result').style.display = 'none'; 
             document.getElementById('btn-check').style.display = 'block'; 
             document.getElementById('btn-next').style.display = 'none';
@@ -609,12 +642,28 @@
         function checkInteractiveAnswer() {
             const dropzone = document.getElementById('answer-dropzone');
             if (dropzone.children.length === 0) return alert("단어를 선택하세요.");
-            const userStr = Array.from(dropzone.children).map(c => c.innerText).join(" ").toLowerCase(), correctStr = originalAnswerWords.join(" ").toLowerCase();
-            const resDiv = document.getElementById('solver-result'); resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
-            if (userStr === correctStr) { resDiv.innerText = "🎉 완벽합니다!"; resDiv.classList.add('correct-anim'); } 
-            else { resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span>`; resDiv.classList.add('wrong-anim'); }
             
-            // [수정] 정답 확인 후 다음 문제와 다시 풀기 버튼 동시 노출
+            const userStr = Array.from(dropzone.children).map(c => c.innerText).join(" ").toLowerCase();
+            const correctStr = originalAnswerWords.join(" ").toLowerCase();
+            const resDiv = document.getElementById('solver-result'); 
+            resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
+            
+            // [추가] 학습 기록 판정 및 로컬 스토리지 저장
+            let history = JSON.parse(localStorage.getItem('learningHistory') || '{}');
+            const rawEng = solverQuestions[currentQIndex].original;
+
+            if (userStr === correctStr) { 
+                resDiv.innerText = "🎉 완벽합니다!"; 
+                resDiv.classList.add('correct-anim'); 
+                history[rawEng] = "correct";
+            } else { 
+                resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span>`; 
+                resDiv.classList.add('wrong-anim'); 
+                history[rawEng] = "incorrect";
+            }
+            
+            localStorage.setItem('learningHistory', JSON.stringify(history));
+
             document.getElementById('btn-check').style.display = 'none';
             document.getElementById('btn-retry').style.display = 'block';
             
@@ -623,7 +672,6 @@
             nextBtn.innerText = (currentQIndex < solverQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
         }
 
-        // [추가] 다시 풀기 기능 실행
         function retryInteractiveQuestion() {
             renderInteractiveQuestion();
         }
