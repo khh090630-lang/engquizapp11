@@ -65,9 +65,10 @@
         .main-title { text-align: center; font-size: 22px; font-weight: 800; margin-bottom: 30px; letter-spacing: 1.5px; }
         
         .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; padding-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
-        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; font-size: 14px; }
-        .word-blocks span { border: 1px solid #555; padding: 4px 8px; margin: 3px; display: inline-block; border-radius: 4px; background:#f9f9f9;}
+        .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
+        .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
+        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
@@ -273,7 +274,6 @@
         <div id="solver-app" style="display: none;">
             <div class="solver-header">
                 <h2 id="solver-title" style="border:none; margin:0; padding:0;">서술형 단어 배열 훈련</h2>
-                <!-- [수정] 학습 종료 시 서버 일괄 저장을 위해 이벤트 변경 -->
                 <button id="btn-close-solver" class="btn-outline" onclick="closeSolver()" style="background:transparent; color:#f87171; border-color:#f87171;">학습 종료하기</button>
             </div>
             <div id="solver-progress" style="margin-bottom: 15px; color: #a5f3fc; font-weight: bold; font-size: 16px;">문제 1 / 5</div>
@@ -332,7 +332,8 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
+        // [중요] 반드시 새로 배포한 웹 앱 URL로 교체해야 합니다!
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyjT5hXmcI4ALBDzFEeP1QEQ-4wlBKIKGuyGsdc-7_c6cQNLlUZzUy2ITa459sQqATu/exec";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -344,8 +345,6 @@
         let editFreqState = [];
         let isSortableInit = false; 
         let globalCategorizedData = null; 
-        
-        // [추가] 일괄 저장을 위한 세션 기록 배열
         let sessionHistoryUpdates = []; 
 
         window.onload = async () => {
@@ -673,7 +672,6 @@
             document.getElementById('solver-kor').innerText = "서버에서 문제를 구성하고 있습니다... 잠시만 기다려주세요.";
             document.getElementById('answer-dropzone').innerHTML = ''; document.getElementById('word-pool').innerHTML = '';
 
-            // [추가] 학습 시작 시 세션 데이터 초기화
             sessionHistoryUpdates = [];
 
             if (!isSortableInit) {
@@ -705,9 +703,14 @@
                 
                 if (!res.ok) throw new Error("HTTP 접속 오류");
                 const responseText = await res.text();
-                let result = JSON.parse(responseText);
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch(parseErr) {
+                    throw new Error("서버 응답을 읽을 수 없습니다.\n앱스 스크립트 최신 버전을 새 배포로 갱신해주세요.");
+                }
 
-                if (result.status === "error") throw new Error(result.message);
+                if (result.status === "error") throw new Error("서버 에러: " + result.message);
                 
                 if(!result.questions || result.questions.length === 0) { 
                     alert("선택하신 조건에 맞는 문장이 없습니다.\n(미학습, 오답 등의 필터를 확인해주세요)"); 
@@ -717,7 +720,7 @@
                 
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
             } catch(e) { 
-                alert("문제 출제 실패:\n" + e.message); 
+                alert("문제 출제 실패:\n" + e.message + "\n\n💡 브라우저 캐시를 지우거나, 앱스 스크립트를 [새 버전으로 배포]했는지 확인하세요."); 
                 closeSolver(); 
             }
         }
@@ -759,7 +762,6 @@
             let status = "unlearned";
 
             if (userStr === correctStr) { 
-                // [수정] 서버 저장 중이라는 메시지 삭제, 즉각 피드백
                 resDiv.innerText = "🎉 완벽합니다!"; 
                 resDiv.classList.add('correct-anim'); 
                 status = "correct";
@@ -769,7 +771,6 @@
                 status = "incorrect";
             }
             
-            // [추가] 이번 문제의 결과를 로컬 배열에만 푸시 (서버 통신 X)
             sessionHistoryUpdates.push({
                 passageId: passageId,
                 eng: rawEng,
@@ -793,12 +794,11 @@
                 currentQIndex++; 
                 renderInteractiveQuestion(); 
             } else { 
-                alert("학습을 모두 마쳤습니다! 기록을 서버에 저장합니다."); 
+                alert("모든 문제를 다 풀었습니다!\n결과를 서버에 동기화합니다."); 
                 closeSolver(); 
             } 
         }
 
-        // [핵심 변경] 학습 종료 시 모아둔 기록을 서버로 한 번에 전송
         async function closeSolver() { 
             if (sessionHistoryUpdates.length > 0) {
                 const closeBtn = document.getElementById('btn-close-solver');
@@ -821,11 +821,11 @@
 
                 closeBtn.innerText = originalText;
                 closeBtn.disabled = false;
-                sessionHistoryUpdates = []; // 전송 후 비우기
+                sessionHistoryUpdates = []; 
             }
 
             switchTab('solve-setup'); 
-            loadList(); // 서버에서 갱신된 최신 통계를 불러와 화면에 뿌려줌
+            loadList(); 
         }
     </script>
 </body>
