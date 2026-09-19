@@ -211,13 +211,22 @@
         <div id="solve-setup-app" style="display: none;">
             <div class="card">
                 <h2>💻 서술형 집중 학습실</h2>
+                
                 <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-                    
-                    <!-- [추가] 학습 기록 필터 UI -->
+                    <!-- [추가] 학습 기록 현황 대시보드 -->
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 학습 기록 필터:</span>
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 누적 학습 현황</span>
                         <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
                     </div>
+                    <div style="display:flex; justify-content:space-around; background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin: 10px 0; width: 100%; text-align:center; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
+                        <div><span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="stat-unlearned" style="color:#e0f8ff; font-size:20px;">0</b></div>
+                        <div><span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="stat-correct" style="color:#34d399; font-size:20px;">0</b></div>
+                        <div><span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="stat-incorrect" style="color:#f87171; font-size:20px;">0</b></div>
+                        <div><span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="stat-rate" style="color:#fbbf24; font-size:20px;">0%</b></div>
+                    </div>
+
+                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+
                     <div style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 10px; flex-wrap: wrap;">
                         <label class="radio-label"><input type="radio" name="history-filter" value="all" checked> 전체 문제</label>
                         <label class="radio-label"><input type="radio" name="history-filter" value="unlearned"> 미학습</label>
@@ -303,7 +312,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbw053Q9gYo8v8dbUJK0O1ej1VJKjMTh9dpp5rlN0MdYcm6qRDXOonIOfB5hiTdvWNA5/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqzCO-zBDO1CmUNLklwNUKt4-OwLCMIiZLERtoqQMuNyKOSH5Di9SkWjbXQy5ie4Xc/exec";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -314,6 +323,7 @@
         let addFreqState = [];
         let editFreqState = [];
         let isSortableInit = false; 
+        let allValidEngData = []; // [추가] 글로벌 학습 통계를 위한 배열
 
         window.onload = async () => {
             if (sessionStorage.getItem('admin_auth') === 'true') { isAdmin = true; document.body.classList.add('admin-mode'); }
@@ -324,10 +334,32 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
+        // [추가] 학습 기록 대시보드 갱신
+        function updateLearningStats() {
+            if (!allValidEngData || allValidEngData.length === 0) return;
+            let history = JSON.parse(localStorage.getItem('learningHistory') || '{}');
+            let correct = 0, incorrect = 0, unlearned = 0;
+            
+            allValidEngData.forEach(eng => {
+                if(history[eng] === 'correct') correct++;
+                else if(history[eng] === 'incorrect') incorrect++;
+                else unlearned++;
+            });
+            
+            let total = correct + incorrect + unlearned;
+            let rate = total === 0 ? 0 : Math.floor(((correct + incorrect) / total) * 100);
+            
+            document.getElementById('stat-unlearned').innerText = unlearned;
+            document.getElementById('stat-correct').innerText = correct;
+            document.getElementById('stat-incorrect').innerText = incorrect;
+            document.getElementById('stat-rate').innerText = rate + "%";
+        }
+
         // [추가] 학습 기록 초기화
         function resetLearningHistory() {
             if(confirm("모든 학습 기록(정답/오답)을 초기화하시겠습니까?")) {
                 localStorage.removeItem('learningHistory');
+                updateLearningStats();
                 alert("초기화되었습니다.");
             }
         }
@@ -367,8 +399,13 @@
         async function loadList() {
             try {
                 const res = await fetch(GAS_URL + "?action=list&t=" + new Date().getTime()); 
-                const list = await res.json();
+                const resData = await res.json();
                 
+                // [수정] 서버에서 전체 유효 문장 목록(allValidEng)을 받아옵니다.
+                const list = resData.list ? resData.list : resData;
+                allValidEngData = resData.allValidEng || [];
+                updateLearningStats(); // 학습 현황 갱신
+
                 const mainContainer = document.getElementById('passage-list'), solveContainer = document.getElementById('solve-passage-list');
                 mainContainer.innerHTML = solveContainer.innerHTML = "";
                 if(list.length === 0) { mainContainer.innerHTML = solveContainer.innerHTML = "<p style='text-align:center;'>등록된 지문이 없습니다.</p>"; return; }
@@ -558,7 +595,7 @@
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: currentScale, useCORS: true, scrollY: 0 }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] } 
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: '.q-box' } 
             }).from(element).save(); 
         }
 
@@ -577,7 +614,6 @@
             else if (document.getElementById('mode-freq-all').checked) { mode = 'freq-all'; }
             else if (document.getElementById('mode-freq-random').checked) { mode = 'freq-random'; count = document.getElementById('freq-random-count').value; }
 
-            // [추가] 학습 기록 필터 옵션 읽기
             const historyFilter = document.querySelector('input[name="history-filter"]:checked').value;
             const historyData = JSON.parse(localStorage.getItem('learningHistory') || '{}');
 
@@ -600,7 +636,6 @@
             }
 
             try {
-                // [추가] 백엔드로 히스토리 정보 전송
                 const res = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
                     body: JSON.stringify({ 
                         action: "get_interactive_desc", 
@@ -612,7 +647,7 @@
                     }) 
                 });
                 const result = await res.json();
-                if(result.questions.length === 0) { alert("조건에 맞는 문장이 부족합니다."); closeSolver(); return; }
+                if(result.questions.length === 0) { alert("조건에 맞는 문장이 없습니다. 필터를 확인해주세요."); closeSolver(); return; }
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
             } catch(e) { alert("문제 데이터 오류"); closeSolver(); }
         }
@@ -648,7 +683,6 @@
             const resDiv = document.getElementById('solver-result'); 
             resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
             
-            // [추가] 학습 기록 판정 및 로컬 스토리지 저장
             let history = JSON.parse(localStorage.getItem('learningHistory') || '{}');
             const rawEng = solverQuestions[currentQIndex].original;
 
@@ -677,7 +711,7 @@
         }
 
         function loadNextInteractive() { if (currentQIndex < solverQuestions.length - 1) { currentQIndex++; renderInteractiveQuestion(); } else { alert("학습을 완료했습니다!"); closeSolver(); } }
-        function closeSolver() { switchTab('solve-setup'); }
+        function closeSolver() { switchTab('solve-setup'); updateLearningStats(); }
     </script>
 </body>
 </html>
