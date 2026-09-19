@@ -214,11 +214,10 @@
                 
                 <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 누적 학습 현황</span>
-                        <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 누적 학습 현황 (서버 동기화)</span>
+                        <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 전체 초기화</button>
                     </div>
                     
-                    <!-- [추가] 각 항목을 클릭할 수 있도록 onclick 추가 및 커서 포인터, 호버 효과 적용 -->
                     <div style="display:flex; justify-content:space-around; background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin: 10px 0; width: 100%; text-align:center; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
                         <div onclick="openHistoryModal('unlearned')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                             <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="stat-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
@@ -320,7 +319,7 @@
         </div>
     </div>
 
-    <!-- [추가] 학습 기록 리스트를 보여줄 팝업 모달 -->
+    <!-- 학습 기록 리스트 팝업 모달 -->
     <div class="modal-overlay" id="history-modal">
         <div class="card modal-box" style="max-width: 800px;">
             <h2 id="history-modal-title" style="margin-bottom: 20px;">📖 학습 기록 상세</h2>
@@ -343,7 +342,7 @@
         let addFreqState = [];
         let editFreqState = [];
         let isSortableInit = false; 
-        let allValidEngData = [];
+        let globalCategorizedData = null; // 서버에서 분류해준 기록 데이터 저장
 
         window.onload = async () => {
             if (sessionStorage.getItem('admin_auth') === 'true') { isAdmin = true; document.body.classList.add('admin-mode'); }
@@ -354,55 +353,27 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
-        function getSafeHistory() {
-            try {
-                let data = localStorage.getItem('learningHistory');
-                return data ? JSON.parse(data) : {};
-            } catch(e) {
-                localStorage.removeItem('learningHistory');
-                return {};
+        // [수정] 서버에서 초기화를 직접 요청하도록 변경
+        async function resetLearningHistory() {
+            if(confirm("모든 기기의 학습 기록(정답/오답)을 완전히 초기화하시겠습니까?")) {
+                document.getElementById('stat-rate').innerText = "초기화 중...";
+                try {
+                    await fetch(GAS_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: "reset_history" })
+                    });
+                    alert("초기화가 완료되었습니다.");
+                    loadList(); 
+                } catch(e) {
+                    alert("초기화 중 서버 오류가 발생했습니다.");
+                }
             }
         }
 
-        // [수정] updateLearningStats에서 객체(item.eng)를 참조하도록 변경
-        function updateLearningStats() {
-            if (!allValidEngData || allValidEngData.length === 0) return;
-            let history = getSafeHistory();
-            let correct = 0, incorrect = 0, unlearned = 0;
-            
-            allValidEngData.forEach(item => {
-                let status = history[item.eng] || 'unlearned';
-                if(status === 'correct') correct++;
-                else if(status === 'incorrect') incorrect++;
-                else unlearned++;
-            });
-            
-            let total = correct + incorrect + unlearned;
-            let rate = total === 0 ? 0 : Math.floor(((correct + incorrect) / total) * 100);
-            
-            document.getElementById('stat-unlearned').innerText = unlearned;
-            document.getElementById('stat-correct').innerText = correct;
-            document.getElementById('stat-incorrect').innerText = incorrect;
-            document.getElementById('stat-rate').innerText = rate + "%";
-        }
-
-        function resetLearningHistory() {
-            if(confirm("모든 학습 기록(정답/오답)을 초기화하시겠습니까?")) {
-                localStorage.removeItem('learningHistory');
-                updateLearningStats();
-                alert("초기화되었습니다.");
-            }
-        }
-
-        // [추가] 기록 클릭 시 모달창 띄우기 함수
         function openHistoryModal(type) {
-            let history = getSafeHistory();
-            let filteredList = [];
-            
-            allValidEngData.forEach(item => {
-                let status = history[item.eng] || 'unlearned';
-                if(status === type) filteredList.push(item);
-            });
+            if(!globalCategorizedData) return;
+            let filteredList = globalCategorizedData[type] || [];
             
             const titles = { 
                 'unlearned': '🔍 미학습 문장 목록', 
@@ -432,7 +403,6 @@
             document.getElementById('history-modal').style.display = 'flex';
         }
 
-        // [추가] 기록 모달창 닫기 함수
         function closeHistoryModal() {
             document.getElementById('history-modal').style.display = 'none';
         }
@@ -474,9 +444,18 @@
                 const res = await fetch(GAS_URL + "?action=list&t=" + new Date().getTime()); 
                 const resData = await res.json();
                 
+                // [수정] 서버에서 직접 계산해준 대시보드 통계를 화면에 뿌려줍니다.
                 const list = resData.list ? resData.list : resData;
-                allValidEngData = resData.allValidEng || [];
-                updateLearningStats(); 
+                globalCategorizedData = resData.categorized || { unlearned: [], correct: [], incorrect: [] };
+                
+                if (resData.stats) {
+                    document.getElementById('stat-unlearned').innerText = resData.stats.unlearned;
+                    document.getElementById('stat-correct').innerText = resData.stats.correct;
+                    document.getElementById('stat-incorrect').innerText = resData.stats.incorrect;
+                    let total = resData.stats.correct + resData.stats.incorrect + resData.stats.unlearned;
+                    let rate = total === 0 ? 0 : Math.floor(((resData.stats.correct + resData.stats.incorrect) / total) * 100);
+                    document.getElementById('stat-rate').innerText = rate + "%";
+                }
 
                 const mainContainer = document.getElementById('passage-list'), solveContainer = document.getElementById('solve-passage-list');
                 mainContainer.innerHTML = solveContainer.innerHTML = "";
@@ -687,7 +666,6 @@
             else if (document.getElementById('mode-freq-random').checked) { mode = 'freq-random'; count = document.getElementById('freq-random-count').value; }
 
             const historyFilter = document.querySelector('input[name="history-filter"]:checked').value;
-            const historyData = getSafeHistory();
 
             switchTab('solver');
             document.getElementById('solver-kor').innerText = "서버에서 문제를 구성하고 있습니다... 잠시만 기다려주세요.";
@@ -711,31 +689,21 @@
                 const res = await fetch(GAS_URL, { 
                     method: "POST", 
                     headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    // [수정] 서버에서 직접 필터를 처리하므로 로컬 데이터는 보내지 않아도 됩니다.
                     body: JSON.stringify({ 
                         action: "get_interactive_desc", 
                         passages: selectedIds, 
                         mode: mode, 
                         count: count,
-                        historyFilter: historyFilter,
-                        historyData: historyData
+                        historyFilter: historyFilter
                     }) 
                 });
                 
-                if (!res.ok) {
-                    throw new Error("HTTP 접속 오류 (" + res.status + ")");
-                }
-                
+                if (!res.ok) throw new Error("HTTP 접속 오류");
                 const responseText = await res.text();
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch(parseErr) {
-                    throw new Error("서버 응답을 읽을 수 없습니다.\n앱스 스크립트 새버전 배포가 필요합니다.");
-                }
+                let result = JSON.parse(responseText);
 
-                if (result.status === "error") {
-                    throw new Error("서버 내부 통신 에러: " + result.message);
-                }
+                if (result.status === "error") throw new Error(result.message);
                 
                 if(!result.questions || result.questions.length === 0) { 
                     alert("선택하신 조건에 맞는 문장이 없습니다.\n(미학습, 오답 등의 필터를 확인해주세요)"); 
@@ -745,7 +713,7 @@
                 
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
             } catch(e) { 
-                alert("문제 출제 실패:\n" + e.message + "\n\n💡 브라우저 캐시를 비우거나 (Ctrl+Shift+R) 관리자에게 문의하세요."); 
+                alert("문제 출제 실패:\n" + e.message); 
                 closeSolver(); 
             }
         }
@@ -772,7 +740,7 @@
             else document.getElementById('word-pool').appendChild(chip);
         }
 
-        function checkInteractiveAnswer() {
+        async function checkInteractiveAnswer() {
             const dropzone = document.getElementById('answer-dropzone');
             if (dropzone.children.length === 0) return alert("단어를 선택하세요.");
             
@@ -781,24 +749,36 @@
             const resDiv = document.getElementById('solver-result'); 
             resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
             
-            let history = getSafeHistory();
-            const rawEng = solverQuestions[currentQIndex].original;
+            document.getElementById('btn-check').style.display = 'none';
+            
+            const q = solverQuestions[currentQIndex];
+            const rawEng = q.original;
+            const passageId = q.passageId;
+            let status = "unlearned";
 
             if (userStr === correctStr) { 
-                resDiv.innerText = "🎉 완벽합니다!"; 
+                resDiv.innerText = "🎉 완벽합니다! (서버 기록 저장 중...)"; 
                 resDiv.classList.add('correct-anim'); 
-                history[rawEng] = "correct";
+                status = "correct";
             } else { 
-                resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span>`; 
+                resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span><br><span style="font-size:12px; color:#999;">(서버 기록 저장 중...)</span>`; 
                 resDiv.classList.add('wrong-anim'); 
-                history[rawEng] = "incorrect";
+                status = "incorrect";
             }
             
-            localStorage.setItem('learningHistory', JSON.stringify(history));
+            // [추가] 서버로 결과 전송하여 동기화
+            try {
+                await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "update_history", passageId: passageId, eng: rawEng, status: status })
+                });
+                
+                if (userStr === correctStr) resDiv.innerText = "🎉 완벽합니다!";
+                else resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span>`;
+            } catch(e) { console.error(e); }
 
-            document.getElementById('btn-check').style.display = 'none';
             document.getElementById('btn-retry').style.display = 'block';
-            
             let nextBtn = document.getElementById('btn-next'); 
             nextBtn.style.display = 'block'; 
             nextBtn.innerText = (currentQIndex < solverQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
@@ -808,8 +788,17 @@
             renderInteractiveQuestion();
         }
 
-        function loadNextInteractive() { if (currentQIndex < solverQuestions.length - 1) { currentQIndex++; renderInteractiveQuestion(); } else { alert("학습을 완료했습니다!"); closeSolver(); } }
-        function closeSolver() { switchTab('solve-setup'); updateLearningStats(); }
+        // [수정] 학습이 끝나면 loadList()를 다시 호출해 최신 기록으로 대시보드를 갱신합니다.
+        function loadNextInteractive() { 
+            if (currentQIndex < solverQuestions.length - 1) { 
+                currentQIndex++; 
+                renderInteractiveQuestion(); 
+            } else { 
+                alert("학습을 완료했습니다!"); 
+                closeSolver(); 
+            } 
+        }
+        function closeSolver() { switchTab('solve-setup'); loadList(); }
     </script>
 </body>
 </html>
