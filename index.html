@@ -353,6 +353,17 @@
                         <label class="radio-label"><input type="radio" name="reading-filter" value="learned_correct"> 정답 지문만</label>
                         <label class="radio-label"><input type="radio" name="reading-filter" value="learned_incorrect"> 오답 지문만</label>
                     </div>
+
+                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 10px 0;"></div>
+                    
+                    <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">출제 문항 수 선택</span>
+                    <label class="radio-label"><input type="radio" name="reading-mode" value="all" checked onchange="toggleReadingMode()">
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">조건에 맞는 <span style="color:#fca5a5;">모든 지문</span> 학습</span>
+                    </label>
+                    <label class="radio-label"><input type="radio" name="reading-mode" value="random" onchange="toggleReadingMode()">
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">조건에 맞는 지문 중 랜덤 출제: </span>
+                        <input type="number" id="reading-random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
+                    </label>
                 </div>
                 
                 <div class="passage-row header-row passage-row-simple" style="margin-top:0;">
@@ -449,7 +460,6 @@
     </div>
 
     <script>
-        // [중요] 새로 배포한 웹 앱 URL을 반드시 여기에 붙여넣어 주세요!
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxN8aH1tvgARagzegJSEFDRz86P639CvBu4IFl8miIJz2sC4VTnNZo_xFgK64G5C-MC/exec";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
@@ -852,6 +862,11 @@
             document.getElementById('random-count').disabled = !document.getElementById('mode-random').checked;
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
         }
+        
+        // [추가] 독해형 문항 수 선택 토글
+        function toggleReadingMode() {
+            document.getElementById('reading-random-count').disabled = !document.querySelector('input[name="reading-mode"][value="random"]').checked;
+        }
 
         // ==========================================
         // 1. 서술형 학습실 로직 (기존)
@@ -976,6 +991,10 @@
 
             const type = document.querySelector('input[name="reading-type"]:checked').value;
             const historyFilter = document.querySelector('input[name="reading-filter"]:checked').value;
+            
+            // [추가] 독해형 전용 랜덤 모드 파라미터 읽기
+            const mode = document.querySelector('input[name="reading-mode"]:checked').value;
+            const count = parseInt(document.getElementById('reading-random-count').value) || 1;
 
             switchTab('reading-solver');
             document.getElementById('reading-content-area').innerHTML = '<p style="text-align:center; padding: 20px;">서버에서 독해 문제를 생성하고 있습니다... 잠시만 기다려주세요.</p>';
@@ -986,7 +1005,7 @@
             try {
                 const res = await fetch(GAS_URL, { 
                     method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ action: "get_interactive_reading", passages: selectedIds, type: type, historyFilter: historyFilter }) 
+                    body: JSON.stringify({ action: "get_interactive_reading", passages: selectedIds, type: type, historyFilter: historyFilter, mode: mode, count: count }) 
                 });
                 
                 if (!res.ok) throw new Error("HTTP 접속 오류");
