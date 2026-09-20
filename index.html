@@ -12,8 +12,8 @@
         body { font-family: 'Pretendard', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e0f8ff; padding: 20px; margin: 0; min-height: 100vh; }
         .container { max-width: 950px; margin: 0 auto; }
         
-        .top-nav { display: flex; gap: 10px; margin-bottom: 25px; }
-        .nav-btn { flex: 1; padding: 15px; border-radius: 12px; background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 16px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.3s ease; }
+        .top-nav { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;}
+        .nav-btn { flex: 1; padding: 15px; border-radius: 12px; background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 15px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.3s ease; text-align: center; min-width: 150px;}
         .nav-btn:hover { background: rgba(255,255,255,0.1); }
         .nav-btn.active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border-color: #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
 
@@ -67,8 +67,8 @@
         .q-box { display: block; width: 100%; break-inside: avoid; page-break-inside: avoid; padding-bottom: 45px; font-size: 13.5px; line-height: 1.6; }
         .q-title { font-weight: bold; font-size: 14.5px; display: block; margin-bottom: 6px; color: #000; }
         .q-direction { margin: 0 0 10px 0; font-size: 13.5px; color: #111; }
-        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; }
-        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; }
+        .box-content { border: 1px solid #000; padding: 12px 15px; margin: 15px 0; background: #fff; text-align: justify; font-size: 14px; font-weight: normal; color: #000;}
+        .q-text { text-align: justify; margin-top: 10px; word-break: keep-all; color: #000;}
 
         .admin-only { display: none !important; }
         body.admin-mode .admin-only-block { display: block !important; }
@@ -110,11 +110,25 @@
         .preview-text-eng { font-weight: bold; color: #e0f8ff; margin-bottom: 3px; }
         .preview-text-kor { color: #94a3b8; }
 
+        /* 독해형(순서, 삽입) 전용 스타일 */
+        .reading-block { display: flex; align-items: stretch; margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: grab; }
+        .reading-block:active { cursor: grabbing; }
+        .reading-label { padding: 15px; background: #3b82f6; color: white; font-weight: bold; border-radius: 8px 0 0 8px; display: flex; align-items: center; justify-content: center; width: 40px; font-size: 18px;}
+        .reading-text { padding: 15px; line-height: 1.5; font-size: 15px; }
+        
+        .insert-container { line-height: 2.0; font-size: 16px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: justify; word-break: keep-all; }
+        .insert-gap { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #1e293b; border: 2px solid #3b82f6; color: white; font-weight: bold; margin: 0 8px; cursor: pointer; transition: all 0.2s; vertical-align: middle; }
+        .insert-gap:hover { background: #3b82f6; transform: scale(1.1); }
+        .insert-gap.selected { background: #10b981; border-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); transform: scale(1.1); }
+
+        .stat-box { display:flex; justify-content:space-around; background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin: 10px 0; width: 100%; text-align:center; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; }
+        .stat-item { cursor:pointer; transition: transform 0.2s; flex: 1;}
+        .stat-item:hover { transform: scale(1.1); }
+
         @media screen and (max-width: 820px) {
             body { padding: 15px 10px; overflow-x: hidden; }
             .card { padding: 20px 15px; }
             .text-row { flex-direction: column; gap: 0; }
-            .top-nav { flex-direction: column; gap: 5px; }
             
             .batch-group { width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
             .batch-group input[type="number"] { flex: 1; min-width: 50px; margin: 0; }
@@ -123,8 +137,9 @@
             #main-app .passage-row { grid-template-columns: 25px 1fr !important; grid-template-areas: "chk title" "inputs inputs" "btns btns"; padding: 15px 10px; gap: 12px 10px; }
             body.admin-mode #main-app .passage-row:not(.header-row) { grid-template-columns: 25px 1fr 35px !important; grid-template-areas: "chk title move" "inputs inputs inputs" "btns btns btns"; }
             #solve-setup-app .passage-row, #main-app .header-row { grid-template-areas: "chk title" !important; grid-template-columns: 25px 1fr !important; }
+            #reading-setup-app .passage-row { grid-template-areas: "chk title" !important; grid-template-columns: 25px 1fr !important; }
             
-            .chk-item-main, .chk-item-solve, #select-all-main, #select-all-solve { grid-area: chk; margin-top: 2px; }
+            .chk-item-main, .chk-item-solve, .chk-item-read, #select-all-main, #select-all-solve, #select-all-read { grid-area: chk; margin-top: 2px; }
             .passage-title { grid-area: title; white-space: normal !important; word-break: keep-all; line-height: 1.4; font-size: 14.5px; }
             
             .input-group { grid-area: inputs; display: flex !important; flex-wrap: wrap; justify-content: flex-start; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 8px; gap: 10px; }
@@ -137,17 +152,18 @@
             .move-btn-group { grid-area: move; display: flex !important; flex-direction: column; justify-content: flex-start; gap: 6px; padding-top: 2px; }
             .btn-move { padding: 8px; font-size: 12px; }
             .hide-on-mobile { display: none !important; }
-            #solve-setup-app .radio-label input[type="number"] { width: 60px !important; flex-shrink: 0; margin: 0 5px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="top-nav" id="top-nav">
-            <button class="nav-btn active" onclick="switchTab('admin')">📑 지문 관리 및 인쇄 (PDF)</button>
-            <button class="nav-btn" onclick="switchTab('solve-setup')">💻 웹 서술형 학습실</button>
+            <button class="nav-btn active" onclick="switchTab('admin')">📑 지문 관리 및 인쇄</button>
+            <button class="nav-btn" onclick="switchTab('solve-setup')">💻 서술형 학습실</button>
+            <button class="nav-btn" onclick="switchTab('reading-setup')">📖 독해형 학습실</button>
         </div>
 
+        <!-- 1. 지문 관리 탭 -->
         <div id="main-app">
             <div class="card admin-only admin-only-block">
                 <h2>✨ 1. 새로운 지문 데이터 등록 (빈출문장 지정)</h2>
@@ -209,39 +225,40 @@
             <button id="pdf-btn" onclick="downloadPDF()" style="display: none; width:100%; margin-top:20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border:none; color:white;">📄 완성된 시험지 PDF 다운로드</button>
         </div>
 
+        <!-- 2. 서술형 셋업 탭 -->
         <div id="solve-setup-app" style="display: none;">
             <div class="card">
                 <h2>💻 서술형 집중 학습실</h2>
                 
                 <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 누적 학습 현황 (서버 동기화)</span>
-                        <button class="btn-outline" onclick="resetLearningHistory()" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 전체 초기화</button>
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 서술형 누적 학습 현황 (문장 단위)</span>
+                        <button class="btn-outline" onclick="resetLearningHistory('desc')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
                     </div>
                     
-                    <div style="display:flex; justify-content:space-around; background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin: 10px 0; width: 100%; text-align:center; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
-                        <div onclick="openHistoryModal('unlearned')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="stat-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                    <div class="stat-box">
+                        <div class="stat-item" onclick="openHistoryModal('desc', 'unlearned')">
+                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="desc-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
                         </div>
-                        <div onclick="openHistoryModal('correct')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="stat-correct" style="color:#34d399; font-size:20px;">0</b>
+                        <div class="stat-item" onclick="openHistoryModal('desc', 'correct')">
+                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="desc-correct" style="color:#34d399; font-size:20px;">0</b>
                         </div>
-                        <div onclick="openHistoryModal('incorrect')" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="stat-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                        <div class="stat-item" onclick="openHistoryModal('desc', 'incorrect')">
+                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="desc-incorrect" style="color:#f87171; font-size:20px;">0</b>
                         </div>
-                        <div>
-                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="stat-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                        <div class="stat-item">
+                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="desc-rate" style="color:#fbbf24; font-size:20px;">0%</b>
                         </div>
                     </div>
 
                     <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
 
                     <div style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 10px; flex-wrap: wrap;">
-                        <label class="radio-label"><input type="radio" name="history-filter" value="all" checked> 전체 문제</label>
-                        <label class="radio-label"><input type="radio" name="history-filter" value="unlearned"> 미학습</label>
-                        <label class="radio-label"><input type="radio" name="history-filter" value="learned_all"> 학습 완료(전체)</label>
-                        <label class="radio-label"><input type="radio" name="history-filter" value="learned_correct"> 정답만</label>
-                        <label class="radio-label"><input type="radio" name="history-filter" value="learned_incorrect"> 오답만</label>
+                        <label class="radio-label"><input type="radio" name="desc-filter" value="all" checked> 전체 문장</label>
+                        <label class="radio-label"><input type="radio" name="desc-filter" value="unlearned"> 미학습</label>
+                        <label class="radio-label"><input type="radio" name="desc-filter" value="learned_all"> 학습 완료(전체)</label>
+                        <label class="radio-label"><input type="radio" name="desc-filter" value="learned_correct"> 정답만</label>
+                        <label class="radio-label"><input type="radio" name="desc-filter" value="learned_incorrect"> 오답만</label>
                     </div>
                     
                     <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
@@ -267,10 +284,87 @@
                     <span>학습할 지문 전체 선택</span>
                 </div>
                 <div id="solve-passage-list"><p style="text-align:center; padding:20px;">로딩 중...</p></div>
-                <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startInteractiveSolving()">🚀 학습 시작하기</button>
+                <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startInteractiveSolving()">🚀 서술형 학습 시작</button>
             </div>
         </div>
 
+        <!-- 3. 독해형 셋업 탭 -->
+        <div id="reading-setup-app" style="display: none;">
+            <div class="card">
+                <h2>📖 독해형 집중 학습실 (지문 단위)</h2>
+                
+                <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                    <!-- 순서 배열 통계 -->
+                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 순서 배열 학습 현황</span>
+                        <button class="btn-outline" onclick="resetLearningHistory('order')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-item" onclick="openHistoryModal('order', 'unlearned')">
+                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="order-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                        </div>
+                        <div class="stat-item" onclick="openHistoryModal('order', 'correct')">
+                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="order-correct" style="color:#34d399; font-size:20px;">0</b>
+                        </div>
+                        <div class="stat-item" onclick="openHistoryModal('order', 'incorrect')">
+                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="order-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                        </div>
+                        <div class="stat-item">
+                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="order-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                        </div>
+                    </div>
+
+                    <!-- 문장 삽입 통계 -->
+                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-top: 10px;">
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 문장 삽입 학습 현황</span>
+                        <button class="btn-outline" onclick="resetLearningHistory('insert')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-item" onclick="openHistoryModal('insert', 'unlearned')">
+                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="insert-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                        </div>
+                        <div class="stat-item" onclick="openHistoryModal('insert', 'correct')">
+                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="insert-correct" style="color:#34d399; font-size:20px;">0</b>
+                        </div>
+                        <div class="stat-item" onclick="openHistoryModal('insert', 'incorrect')">
+                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="insert-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                        </div>
+                        <div class="stat-item">
+                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="insert-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                        </div>
+                    </div>
+
+                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 15px 0 5px 0;"></div>
+
+                    <div style="margin-bottom: 10px; width: 100%;">
+                        <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">출제 유형 선택</span>
+                        <div style="display: flex; gap: 15px;">
+                            <label class="radio-label" style="flex:1; background:rgba(0,0,0,0.3); justify-content:center;"><input type="radio" name="reading-type" value="order" checked> 순서 배열 풀기</label>
+                            <label class="radio-label" style="flex:1; background:rgba(0,0,0,0.3); justify-content:center;"><input type="radio" name="reading-type" value="insert"> 문장 삽입 풀기</label>
+                        </div>
+                    </div>
+
+                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+
+                    <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">학습 기록 필터</span>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <label class="radio-label"><input type="radio" name="reading-filter" value="all" checked> 전체 지문</label>
+                        <label class="radio-label"><input type="radio" name="reading-filter" value="unlearned"> 미학습 지문</label>
+                        <label class="radio-label"><input type="radio" name="reading-filter" value="learned_correct"> 정답 지문만</label>
+                        <label class="radio-label"><input type="radio" name="reading-filter" value="learned_incorrect"> 오답 지문만</label>
+                    </div>
+                </div>
+                
+                <div class="passage-row header-row passage-row-simple" style="margin-top:0;">
+                    <input type="checkbox" id="select-all-read" onclick="toggleSelectAll('read')">
+                    <span>학습할 지문 전체 선택</span>
+                </div>
+                <div id="read-passage-list"><p style="text-align:center; padding:20px;">로딩 중...</p></div>
+                <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startReadingSolving()">🚀 독해형 학습 시작</button>
+            </div>
+        </div>
+
+        <!-- 서술형 풀이 화면 -->
         <div id="solver-app" style="display: none;">
             <div class="solver-header">
                 <h2 id="solver-title" style="border:none; margin:0; padding:0;">서술형 단어 배열 훈련</h2>
@@ -289,6 +383,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- 독해형 풀이 화면 -->
+        <div id="reading-solver-app" style="display: none;">
+            <div class="solver-header">
+                <h2 id="reading-solver-title" style="border:none; margin:0; padding:0;">독해형 훈련</h2>
+                <button id="btn-close-reading" class="btn-outline" onclick="closeReadingSolver()" style="background:transparent; color:#f87171; border-color:#f87171;">학습 종료하기</button>
+            </div>
+            <div id="reading-solver-progress" style="margin-bottom: 15px; color: #a5f3fc; font-weight: bold; font-size: 16px;">문제 1 / 5</div>
+            <div class="card">
+                <div id="reading-direction" style="color:#ffd700; font-weight:bold; margin-bottom: 15px;">지시문</div>
+                
+                <!-- 문제 렌더링 영역 -->
+                <div id="reading-content-area"></div>
+                
+                <div id="reading-solver-result" class="solver-result" style="margin-top:20px;"></div>
+                <div class="solver-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="btn-reading-check" onclick="checkReadingAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
+                    <button id="btn-reading-retry" onclick="retryReadingQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
+                    <button id="btn-reading-next" onclick="loadNextReading()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
@@ -333,7 +450,7 @@
 
     <script>
         // [중요] 새로 배포한 웹 앱 URL을 반드시 여기에 붙여넣어 주세요!
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxN8aH1tvgARagzegJSEFDRz86P639CvBu4IFl8miIJz2sC4VTnNZo_xFgK64G5C-MC/exec";
+        const GAS_URL = "여기에_새_URL_붙여넣기";
         const ADMIN_PASSWORD = "loveng090630";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -344,18 +461,21 @@
         let addFreqState = [];
         let editFreqState = [];
         let isSortableInit = false; 
+        
         let globalCategorizedData = null; 
         let sessionHistoryUpdates = []; 
+        
+        let readingQuestions = [];
+        let currentReadingIndex = 0;
+        let readingSortable = null;
+        let selectedInsertGap = -1;
 
         window.onload = async () => {
             try {
                 if (sessionStorage.getItem('admin_auth') === 'true') { 
-                    isAdmin = true; 
-                    document.body.classList.add('admin-mode'); 
+                    isAdmin = true; document.body.classList.add('admin-mode'); 
                 }
-            } catch(e) {
-                console.warn("Storage restricted by browser.");
-            }
+            } catch(e) { console.warn("Storage restricted by browser."); }
             
             loadList();
             
@@ -365,14 +485,16 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         };
 
-        async function resetLearningHistory() {
-            if(confirm("모든 기기의 학습 기록(정답/오답)을 완전히 초기화하시겠습니까?")) {
-                document.getElementById('stat-rate').innerText = "초기화 중...";
+        async function resetLearningHistory(type) {
+            let msg = type === 'desc' ? "서술형 기록을 전체 초기화할까요?" : 
+                      (type === 'order' ? "순서 배열 기록을 전체 초기화할까요?" : "문장 삽입 기록을 전체 초기화할까요?");
+            
+            if(confirm(msg)) {
                 try {
                     await fetch(GAS_URL, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: "reset_history" })
+                        body: JSON.stringify({ action: "reset_history", type: type })
                     });
                     alert("초기화가 완료되었습니다.");
                     loadList(); 
@@ -382,31 +504,42 @@
             }
         }
 
-        function openHistoryModal(type) {
+        // 현황 클릭 시 모달 (서술형, 순서배열, 문장삽입 통합)
+        function openHistoryModal(type, status) {
             if(!globalCategorizedData) return;
-            let filteredList = globalCategorizedData[type] || [];
+            let filteredList = globalCategorizedData[type] ? (globalCategorizedData[type][status] || []) : [];
             
-            const titles = { 
-                'unlearned': '🔍 미학습 문장 목록', 
-                'correct': '✅ 정답 문장 목록', 
-                'incorrect': '❌ 오답 문장 목록' 
-            };
+            const statusNames = { 'unlearned': '🔍 미학습', 'correct': '✅ 정답', 'incorrect': '❌ 오답' };
+            const typeNames = { 'desc': '서술형', 'order': '순서 배열', 'insert': '문장 삽입' };
             
-            document.getElementById('history-modal-title').innerText = titles[type] + ` (${filteredList.length}개)`;
+            document.getElementById('history-modal-title').innerText = `[${typeNames[type]}] ${statusNames[status]} 목록 (${filteredList.length}개)`;
             
             let htmlStr = "";
             if(filteredList.length === 0) {
-                htmlStr = `<p style="text-align:center; color:#94a3b8; margin-top:20px;">해당하는 문장이 없습니다.</p>`;
+                htmlStr = `<p style="text-align:center; color:#94a3b8; margin-top:20px;">해당하는 데이터가 없습니다.</p>`;
             } else {
                 filteredList.forEach(item => {
-                    htmlStr += `
-                        <div class="preview-item ${item.isFreq ? 'is-freq' : ''}" style="cursor:default; margin-bottom: 10px; background: rgba(255,255,255,0.03);">
-                            <div class="star-icon">${item.isFreq ? '★' : '☆'}</div>
-                            <div class="preview-text">
-                                <div class="preview-text-eng" style="font-size: 14px;">${item.eng}</div>
-                                <div class="preview-text-kor" style="font-size: 13px;">${item.trans}</div>
-                            </div>
-                        </div>`;
+                    // 서술형은 문장단위, 독해형은 지문단위이므로 표시 형식을 다르게 처리
+                    if(type === 'desc') {
+                        htmlStr += `
+                            <div class="preview-item ${item.isFreq ? 'is-freq' : ''}" style="cursor:default; margin-bottom: 10px; background: rgba(255,255,255,0.03);">
+                                <div class="star-icon">${item.isFreq ? '★' : '☆'}</div>
+                                <div class="preview-text">
+                                    <div class="preview-text-eng" style="color:#a5f3fc; font-size: 11px; margin-bottom:3px;">[출처: ${item.title}]</div>
+                                    <div class="preview-text-eng" style="font-size: 14px;">${item.eng}</div>
+                                    <div class="preview-text-kor" style="font-size: 13px;">${item.trans}</div>
+                                </div>
+                            </div>`;
+                    } else {
+                        // 독해형 (지문 클릭 시 상세보기 연결)
+                        htmlStr += `
+                            <div class="preview-item" style="margin-bottom: 10px; background: rgba(255,255,255,0.03);" onclick="openViewModal('${item.passageId}')">
+                                <div class="preview-text" style="width:100%;">
+                                    <div class="preview-text-eng" style="font-size: 15px; font-weight:bold; color:#e0f8ff;">📁 [${item.folder}] ${item.title}</div>
+                                    <div style="font-size: 12px; color:#94a3b8; margin-top:5px;">클릭하여 지문 전문 보기</div>
+                                </div>
+                            </div>`;
+                    }
                 });
             }
             
@@ -414,9 +547,7 @@
             document.getElementById('history-modal').style.display = 'flex';
         }
 
-        function closeHistoryModal() {
-            document.getElementById('history-modal').style.display = 'none';
-        }
+        function closeHistoryModal() { document.getElementById('history-modal').style.display = 'none'; }
 
         function renderPreview(engId, korId, containerId, stateArray) {
             const engLines = document.getElementById(engId).value.split('\n').map(s => s.trim()).filter(s => s !== "");
@@ -443,28 +574,57 @@
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('solve-setup-app').style.display = 'none';
+            document.getElementById('reading-setup-app').style.display = 'none';
             document.getElementById('solver-app').style.display = 'none';
+            document.getElementById('reading-solver-app').style.display = 'none';
+            
             document.getElementById('top-nav').style.display = 'flex';
-            if(tabId === 'admin') { document.querySelector('.top-nav button:nth-child(1)').classList.add('active'); document.getElementById('main-app').style.display = 'block'; } 
-            else if (tabId === 'solve-setup') { document.querySelector('.top-nav button:nth-child(2)').classList.add('active'); document.getElementById('solve-setup-app').style.display = 'block'; } 
-            else if (tabId === 'solver') { document.getElementById('top-nav').style.display = 'none'; document.getElementById('solver-app').style.display = 'block'; }
+            
+            if(tabId === 'admin') { 
+                document.querySelector('.top-nav button:nth-child(1)').classList.add('active'); 
+                document.getElementById('main-app').style.display = 'block'; 
+            } else if (tabId === 'solve-setup') { 
+                document.querySelector('.top-nav button:nth-child(2)').classList.add('active'); 
+                document.getElementById('solve-setup-app').style.display = 'block'; 
+            } else if (tabId === 'reading-setup') { 
+                document.querySelector('.top-nav button:nth-child(3)').classList.add('active'); 
+                document.getElementById('reading-setup-app').style.display = 'block'; 
+            } else if (tabId === 'solver') { 
+                document.getElementById('top-nav').style.display = 'none'; 
+                document.getElementById('solver-app').style.display = 'block'; 
+            } else if (tabId === 'reading-solver') { 
+                document.getElementById('top-nav').style.display = 'none'; 
+                document.getElementById('reading-solver-app').style.display = 'block'; 
+            }
         }
 
-        // [핵심 변경] 서버의 진짜 데이터를 가져와서 화면에 직접 적용하는 로직
-        function updateLearningStats() {
-            if (!globalCategorizedData) return;
+        // 화면 갱신 (서술형, 순서배열, 문장삽입 통계 업데이트)
+        function updateLearningStats(stats) {
+            if (!stats) return;
             
-            let correct = globalCategorizedData.correct ? globalCategorizedData.correct.length : 0;
-            let incorrect = globalCategorizedData.incorrect ? globalCategorizedData.incorrect.length : 0;
-            let unlearned = globalCategorizedData.unlearned ? globalCategorizedData.unlearned.length : 0;
-            
-            let total = correct + incorrect + unlearned;
-            let rate = total === 0 ? 0 : Math.floor(((correct + incorrect) / total) * 100);
-            
-            document.getElementById('stat-unlearned').innerText = unlearned;
-            document.getElementById('stat-correct').innerText = correct;
-            document.getElementById('stat-incorrect').innerText = incorrect;
-            document.getElementById('stat-rate').innerText = rate + "%";
+            // 서술형
+            let d_total = stats.desc.correct + stats.desc.incorrect + stats.desc.unlearned;
+            let d_rate = d_total === 0 ? 0 : Math.floor(((stats.desc.correct + stats.desc.incorrect) / d_total) * 100);
+            document.getElementById('desc-unlearned').innerText = stats.desc.unlearned;
+            document.getElementById('desc-correct').innerText = stats.desc.correct;
+            document.getElementById('desc-incorrect').innerText = stats.desc.incorrect;
+            document.getElementById('desc-rate').innerText = d_rate + "%";
+
+            // 순서배열
+            let o_total = stats.order.correct + stats.order.incorrect + stats.order.unlearned;
+            let o_rate = o_total === 0 ? 0 : Math.floor(((stats.order.correct + stats.order.incorrect) / o_total) * 100);
+            document.getElementById('order-unlearned').innerText = stats.order.unlearned;
+            document.getElementById('order-correct').innerText = stats.order.correct;
+            document.getElementById('order-incorrect').innerText = stats.order.incorrect;
+            document.getElementById('order-rate').innerText = o_rate + "%";
+
+            // 문장삽입
+            let i_total = stats.insert.correct + stats.insert.incorrect + stats.insert.unlearned;
+            let i_rate = i_total === 0 ? 0 : Math.floor(((stats.insert.correct + stats.insert.incorrect) / i_total) * 100);
+            document.getElementById('insert-unlearned').innerText = stats.insert.unlearned;
+            document.getElementById('insert-correct').innerText = stats.insert.correct;
+            document.getElementById('insert-incorrect').innerText = stats.insert.incorrect;
+            document.getElementById('insert-rate').innerText = i_rate + "%";
         }
 
         async function loadList() {
@@ -474,23 +634,32 @@
                 const resData = await res.json();
                 
                 const list = resData.list ? resData.list : resData;
+                globalCategorizedData = resData.categorized;
                 
-                // 서버에서 넘겨받은 실제 통계 데이터를 저장
-                globalCategorizedData = resData.categorized || { unlearned: [], correct: [], incorrect: [] };
-                
-                // 로컬 데이터 무시하고 즉각 화면에 적용
-                updateLearningStats(); 
+                if (resData.stats) updateLearningStats(resData.stats);
 
-                const mainContainer = document.getElementById('passage-list'), solveContainer = document.getElementById('solve-passage-list');
-                mainContainer.innerHTML = solveContainer.innerHTML = "";
-                if(list.length === 0) { mainContainer.innerHTML = solveContainer.innerHTML = "<p style='text-align:center;'>등록된 지문이 없습니다.</p>"; return; }
+                const mainContainer = document.getElementById('passage-list');
+                const solveContainer = document.getElementById('solve-passage-list');
+                const readContainer = document.getElementById('read-passage-list');
+                
+                mainContainer.innerHTML = solveContainer.innerHTML = readContainer.innerHTML = "";
+                if(list.length === 0) { 
+                    mainContainer.innerHTML = solveContainer.innerHTML = readContainer.innerHTML = "<p style='text-align:center;'>등록된 지문이 없습니다.</p>"; 
+                    return; 
+                }
+                
                 const folders = {};
                 list.forEach(item => { const f = item.folder || "미분류"; globalFolders.add(f); if(!folders[f]) folders[f] = []; folders[f].push(item); });
                 updateFolderDropdowns();
-                let mainHtml = "", solveHtml = "", folderIndex = 0;
+                
+                let mainHtml = "", solveHtml = "", readHtml = "", folderIndex = 0;
                 for (const [folderName, items] of Object.entries(folders)) {
-                    mainHtml += `<div class="folder-header" onclick="toggleFolder('main-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="main-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'main')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="main-content-${folderIndex}" class="folder-content">`;
-                    solveHtml += `<div class="folder-header" onclick="toggleFolder('solve-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="solve-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'solve')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="solve-content-${folderIndex}" class="folder-content">`;
+                    let headerMain = `<div class="folder-header" onclick="toggleFolder('main-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="main-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'main')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="main-content-${folderIndex}" class="folder-content">`;
+                    let headerSolve = `<div class="folder-header" onclick="toggleFolder('solve-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="solve-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'solve')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="solve-content-${folderIndex}" class="folder-content">`;
+                    let headerRead = `<div class="folder-header" onclick="toggleFolder('read-content-${folderIndex}')"><div style="display: flex; gap: 10px;"><input type="checkbox" data-target="read-content-${folderIndex}" onclick="toggleFolderSelectAll(event, this, 'read')"><span>📂 ${folderName} (${items.length})</span></div><span class="toggle-icon">▼</span></div><div id="read-content-${folderIndex}" class="folder-content">`;
+                    
+                    mainHtml += headerMain; solveHtml += headerSolve; readHtml += headerRead;
+                    
                     items.forEach(item => {
                         mainHtml += `
                             <div class="passage-row" data-id="${item.id}">
@@ -511,13 +680,15 @@
                                 </div>
                             </div>`;
                         solveHtml += `<div class="passage-row passage-row-simple" data-id="${item.id}"><input type="checkbox" class="chk-item-solve" value="${item.id}"><span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span></div>`;
+                        readHtml += `<div class="passage-row passage-row-simple" data-id="${item.id}"><input type="checkbox" class="chk-item-read" value="${item.id}"><span class="passage-title" onclick="openViewModal('${item.id}')">${item.title}</span></div>`;
                     });
-                    mainHtml += `</div>`; solveHtml += `</div>`; folderIndex++;
+                    mainHtml += `</div>`; solveHtml += `</div>`; readHtml += `</div>`; folderIndex++;
                 }
-                mainContainer.innerHTML = mainHtml; solveContainer.innerHTML = solveHtml;
+                mainContainer.innerHTML = mainHtml; solveContainer.innerHTML = solveHtml; readContainer.innerHTML = readHtml;
             } catch (err) {
-                document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>데이터를 불러오지 못했습니다.<br>새로운 배포 URL을 적용했는지 확인해주세요.</p>";
-                document.getElementById('solve-passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>데이터를 불러오지 못했습니다.</p>";
+                document.getElementById('passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>서버 연결 실패</p>";
+                document.getElementById('solve-passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>서버 연결 실패</p>";
+                document.getElementById('read-passage-list').innerHTML = "<p style='text-align:center; color:#f87171;'>서버 연결 실패</p>";
             }
         }
 
@@ -682,6 +853,9 @@
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
         }
 
+        // ==========================================
+        // 1. 서술형 학습실 로직 (기존)
+        // ==========================================
         async function startInteractiveSolving() {
             const selectedIds = [];
             document.querySelectorAll('#solve-passage-list .chk-item-solve:checked').forEach(chk => selectedIds.push(chk.value));
@@ -692,7 +866,7 @@
             else if (document.getElementById('mode-freq-all').checked) { mode = 'freq-all'; }
             else if (document.getElementById('mode-freq-random').checked) { mode = 'freq-random'; count = document.getElementById('freq-random-count').value; }
 
-            const historyFilter = document.querySelector('input[name="history-filter"]:checked').value;
+            const historyFilter = document.querySelector('input[name="desc-filter"]:checked').value;
 
             switchTab('solver');
             document.getElementById('solver-kor').innerText = "서버에서 문제를 구성하고 있습니다... 잠시만 기다려주세요.";
@@ -701,54 +875,28 @@
             sessionHistoryUpdates = [];
 
             if (!isSortableInit) {
-                Sortable.create(document.getElementById('word-pool'), {
-                    group: 'shared', 
-                    animation: 150,
-                    ghostClass: 'sortable-ghost' 
-                });
-                Sortable.create(document.getElementById('answer-dropzone'), {
-                    group: 'shared', 
-                    animation: 150,
-                    ghostClass: 'sortable-ghost' 
-                });
+                Sortable.create(document.getElementById('word-pool'), { group: 'shared', animation: 150, ghostClass: 'sortable-ghost' });
+                Sortable.create(document.getElementById('answer-dropzone'), { group: 'shared', animation: 150, ghostClass: 'sortable-ghost' });
                 isSortableInit = true;
             }
 
             try {
                 const res = await fetch(GAS_URL, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                    body: JSON.stringify({ 
-                        action: "get_interactive_desc", 
-                        passages: selectedIds, 
-                        mode: mode, 
-                        count: count,
-                        historyFilter: historyFilter
-                    }) 
+                    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ action: "get_interactive_desc", passages: selectedIds, mode: mode, count: count, historyFilter: historyFilter }) 
                 });
                 
                 if (!res.ok) throw new Error("HTTP 접속 오류");
-                const responseText = await res.text();
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch(parseErr) {
-                    throw new Error("서버 응답을 읽을 수 없습니다.\n앱스 스크립트 최신 버전을 새 배포로 갱신해주세요.");
-                }
-
+                let result = await res.json();
                 if (result.status === "error") throw new Error("서버 에러: " + result.message);
                 
                 if(!result.questions || result.questions.length === 0) { 
                     alert("선택하신 조건에 맞는 문장이 없습니다.\n(미학습, 오답 등의 필터를 확인해주세요)"); 
-                    closeSolver(); 
-                    return; 
+                    closeSolver(); return; 
                 }
                 
                 solverQuestions = result.questions; currentQIndex = 0; renderInteractiveQuestion();
-            } catch(e) { 
-                alert("문제 출제 실패:\n" + e.message); 
-                closeSolver(); 
-            }
+            } catch(e) { alert("문제 출제 실패:\n" + e.message); closeSolver(); }
         }
 
         function renderInteractiveQuestion() {
@@ -783,76 +931,185 @@
             resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
             
             const q = solverQuestions[currentQIndex];
-            const rawEng = q.original;
-            const passageId = q.passageId;
             let status = "unlearned";
 
             if (userStr === correctStr) { 
-                resDiv.innerText = "🎉 완벽합니다!"; 
-                resDiv.classList.add('correct-anim'); 
-                status = "correct";
+                resDiv.innerText = "🎉 완벽합니다!"; resDiv.classList.add('correct-anim'); status = "correct";
             } else { 
                 resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${originalAnswerWords.join(" ")}</span>`; 
-                resDiv.classList.add('wrong-anim'); 
-                status = "incorrect";
+                resDiv.classList.add('wrong-anim'); status = "incorrect";
             }
             
-            sessionHistoryUpdates.push({
-                passageId: passageId,
-                eng: rawEng,
-                status: status
-            });
+            sessionHistoryUpdates.push({ passageId: q.passageId, type: 'desc', target: q.original, status: status });
 
             document.getElementById('btn-check').style.display = 'none';
             document.getElementById('btn-retry').style.display = 'block';
-            
-            let nextBtn = document.getElementById('btn-next'); 
-            nextBtn.style.display = 'block'; 
-            nextBtn.innerText = (currentQIndex < solverQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
+            let nextBtn = document.getElementById('btn-next'); nextBtn.style.display = 'block'; nextBtn.innerText = (currentQIndex < solverQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
         }
 
-        function retryInteractiveQuestion() {
-            renderInteractiveQuestion();
-        }
-
-        function loadNextInteractive() { 
-            if (currentQIndex < solverQuestions.length - 1) { 
-                currentQIndex++; 
-                renderInteractiveQuestion(); 
-            } else { 
-                alert("모든 문제를 다 풀었습니다!\n결과를 서버에 동기화합니다."); 
-                closeSolver(); 
-            } 
-        }
+        function retryInteractiveQuestion() { renderInteractiveQuestion(); }
+        function loadNextInteractive() { if (currentQIndex < solverQuestions.length - 1) { currentQIndex++; renderInteractiveQuestion(); } else { alert("모든 문제를 다 풀었습니다!\n결과를 서버에 동기화합니다."); closeSolver(); } }
 
         async function closeSolver() { 
             if (sessionHistoryUpdates.length > 0) {
                 const closeBtn = document.getElementById('btn-close-solver');
                 const originalText = closeBtn.innerText;
-                closeBtn.innerText = "기록 동기화 중...";
-                closeBtn.disabled = true;
+                closeBtn.innerText = "기록 동기화 중..."; closeBtn.disabled = true;
 
                 try {
-                    await fetch(GAS_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({
-                            action: "update_history_batch",
-                            updates: sessionHistoryUpdates
-                        })
-                    });
-                } catch(e) {
-                    alert("일부 학습 기록을 서버에 저장하는 데 실패했습니다.");
-                }
+                    await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update_history_batch", updates: sessionHistoryUpdates }) });
+                } catch(e) { alert("서버 저장 실패"); }
 
-                closeBtn.innerText = originalText;
-                closeBtn.disabled = false;
+                closeBtn.innerText = originalText; closeBtn.disabled = false;
                 sessionHistoryUpdates = []; 
             }
-
-            switchTab('solve-setup'); 
-            loadList(); 
+            switchTab('solve-setup'); loadList(); 
         }
+
+        // ==========================================
+        // 2. 독해형 학습실 로직 (순서배열/문장삽입)
+        // ==========================================
+        async function startReadingSolving() {
+            const selectedIds = [];
+            document.querySelectorAll('#read-passage-list .chk-item-read:checked').forEach(chk => selectedIds.push(chk.value));
+            if(selectedIds.length === 0) return alert("학습할 지문을 선택해주세요.");
+
+            const type = document.querySelector('input[name="reading-type"]:checked').value;
+            const historyFilter = document.querySelector('input[name="reading-filter"]:checked').value;
+
+            switchTab('reading-solver');
+            document.getElementById('reading-content-area').innerHTML = '<p style="text-align:center; padding: 20px;">서버에서 독해 문제를 생성하고 있습니다... 잠시만 기다려주세요.</p>';
+            document.getElementById('reading-solver-result').style.display = 'none';
+            
+            sessionHistoryUpdates = [];
+
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ action: "get_interactive_reading", passages: selectedIds, type: type, historyFilter: historyFilter }) 
+                });
+                
+                if (!res.ok) throw new Error("HTTP 접속 오류");
+                let result = await res.json();
+                if (result.status === "error") throw new Error(result.message);
+                
+                if(!result.questions || result.questions.length === 0) { 
+                    alert("선택하신 조건에 맞는 지문이 없습니다.\n(미학습, 오답 등의 필터를 확인해주세요)"); 
+                    closeReadingSolver(); return; 
+                }
+                
+                readingQuestions = result.questions; currentReadingIndex = 0; renderReadingQuestion();
+            } catch(e) { alert("문제 출제 실패:\n" + e.message); closeReadingSolver(); }
+        }
+
+        function renderReadingQuestion() {
+            const q = readingQuestions[currentReadingIndex];
+            document.getElementById('reading-solver-progress').innerText = `문제 ${currentReadingIndex + 1} / ${readingQuestions.length}  (출처: ${q.title})`;
+            
+            const contentArea = document.getElementById('reading-content-area');
+            contentArea.innerHTML = '';
+            
+            document.getElementById('reading-solver-result').style.display = 'none'; 
+            document.getElementById('btn-reading-check').style.display = 'block'; 
+            document.getElementById('btn-reading-next').style.display = 'none';
+            document.getElementById('btn-reading-retry').style.display = 'none';
+
+            if (q.type === 'order') {
+                document.getElementById('reading-direction').innerText = "주어진 문장 다음에 이어질 글의 순서를 알맞게 배열하시오. (드래그하여 순서 변경)";
+                
+                let html = `<div class="box-content" style="background:#f0f8ff;"><b>${q.baseSentence}</b></div>`;
+                html += `<div id="reading-sortable" style="margin-top: 20px;">`;
+                q.chunks.forEach(chunk => {
+                    html += `<div class="reading-block" data-label="${chunk.label}">
+                                <div class="reading-label">${chunk.label}</div>
+                                <div class="reading-text">${chunk.text}</div>
+                             </div>`;
+                });
+                html += `</div>`;
+                contentArea.innerHTML = html;
+                
+                if(readingSortable) readingSortable.destroy();
+                readingSortable = Sortable.create(document.getElementById('reading-sortable'), { animation: 150, ghostClass: 'sortable-ghost' });
+            
+            } else if (q.type === 'insert') {
+                document.getElementById('reading-direction').innerText = "주어진 문장이 들어가기에 가장 적절한 곳을 고르시오. (번호 클릭)";
+                
+                let html = `<div class="box-content" style="background:#f0f8ff;"><b>${q.targetSentence}</b></div>`;
+                html += `<div class="insert-container">`;
+                
+                q.remainingSentences.forEach((sent, idx) => {
+                    html += `<span>${sent}</span>`;
+                    html += `<span class="insert-gap" data-idx="${idx + 1}" onclick="selectInsertGap(${idx + 1})">${idx + 1}</span>`;
+                });
+                html += `</div>`;
+                contentArea.innerHTML = html;
+                selectedInsertGap = -1;
+            }
+        }
+
+        function selectInsertGap(idx) {
+            if(document.getElementById('btn-reading-next').style.display === 'block') return; // 정답 확인 후 변경 금지
+            document.querySelectorAll('.insert-gap').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`.insert-gap[data-idx="${idx}"]`).classList.add('selected');
+            selectedInsertGap = idx;
+        }
+
+        function checkReadingAnswer() {
+            const q = readingQuestions[currentReadingIndex];
+            const resDiv = document.getElementById('reading-solver-result'); 
+            let isCorrect = false;
+            let correctAnswerText = "";
+
+            if (q.type === 'order') {
+                const items = document.querySelectorAll('#reading-sortable .reading-block');
+                const userOrder = Array.from(items).map(el => el.getAttribute('data-label'));
+                if (userOrder.join('') === q.correctOrder.join('')) isCorrect = true;
+                correctAnswerText = q.correctOrder.join(' - ');
+            } else if (q.type === 'insert') {
+                if (selectedInsertGap === -1) return alert("들어갈 위치(번호)를 선택하세요.");
+                if (selectedInsertGap === q.correctGap) isCorrect = true;
+                correctAnswerText = q.correctGap.toString() + "번";
+            }
+
+            resDiv.style.display = 'block'; resDiv.classList.remove('correct-anim', 'wrong-anim');
+            let status = "unlearned";
+
+            if (isCorrect) {
+                resDiv.innerText = "🎉 완벽합니다!"; resDiv.classList.add('correct-anim'); status = "correct";
+            } else {
+                resDiv.innerHTML = `❌ 틀렸습니다.<br><span style="font-size:15px; color:#555; display:block; margin-top:8px;">정답: ${correctAnswerText}</span>`; 
+                resDiv.classList.add('wrong-anim'); status = "incorrect";
+            }
+
+            // 기록 임시 저장 (독해형은 target이 passageId 자체)
+            sessionHistoryUpdates.push({ passageId: q.passageId, type: q.type, target: q.passageId, status: status });
+
+            document.getElementById('btn-reading-check').style.display = 'none';
+            document.getElementById('btn-reading-retry').style.display = 'block';
+            let nextBtn = document.getElementById('btn-reading-next'); 
+            nextBtn.style.display = 'block'; 
+            nextBtn.innerText = (currentReadingIndex < readingQuestions.length - 1) ? "다음 문제 ➔" : "완료 및 나가기";
+        }
+
+        function retryReadingQuestion() { renderReadingQuestion(); }
+        function loadNextReading() { if (currentReadingIndex < readingQuestions.length - 1) { currentReadingIndex++; renderReadingQuestion(); } else { alert("모든 문제를 다 풀었습니다!\n결과를 서버에 동기화합니다."); closeReadingSolver(); } }
+
+        async function closeReadingSolver() {
+            if (sessionHistoryUpdates.length > 0) {
+                const closeBtn = document.getElementById('btn-close-reading');
+                const originalText = closeBtn.innerText;
+                closeBtn.innerText = "기록 동기화 중..."; closeBtn.disabled = true;
+
+                try {
+                    await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "update_history_batch", updates: sessionHistoryUpdates }) });
+                } catch(e) { alert("서버 저장 실패"); }
+
+                closeBtn.innerText = originalText; closeBtn.disabled = false;
+                sessionHistoryUpdates = []; 
+            }
+            switchTab('reading-setup'); loadList(); 
+        }
+
     </script>
 </body>
 </html>
