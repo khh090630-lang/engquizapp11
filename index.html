@@ -20,7 +20,7 @@
         .card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 30px; border-radius: 20px; margin-bottom: 25px; border: 1px solid rgba(255, 255, 255, 0.1); }
         h2 { margin-top: 0; font-weight: 800; background: linear-gradient(to right, #6ee7b7, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; }
 
-        input[type="text"], input[type="number"], textarea, select { width: 100%; box-sizing: border-box; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(0, 242, 254, 0.3); color: #e0f8ff; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-family: inherit; font-size: 15px; font-weight: bold; }
+        input[type="password"], input[type="text"], input[type="number"], textarea, select { width: 100%; box-sizing: border-box; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(0, 242, 254, 0.3); color: #e0f8ff; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-family: inherit; font-size: 15px; font-weight: bold; }
         textarea { resize: vertical; min-height: 100px; }
         .text-row { display: flex; gap: 15px; }
         .text-col { flex: 1; }
@@ -110,7 +110,6 @@
         .preview-text-eng { font-weight: bold; color: #e0f8ff; margin-bottom: 3px; }
         .preview-text-kor { color: #94a3b8; }
 
-        /* 독해형(순서, 삽입) 전용 스타일 */
         .reading-block { display: flex; align-items: stretch; margin-bottom: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: grab; }
         .reading-block:active { cursor: grabbing; }
         .reading-label { padding: 15px; background: #3b82f6; color: white; font-weight: bold; border-radius: 8px 0 0 8px; display: flex; align-items: center; justify-content: center; width: 40px; font-size: 18px;}
@@ -156,269 +155,284 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-nav" id="top-nav">
-            <button class="nav-btn active" onclick="switchTab('admin')">📑 지문 관리 및 인쇄</button>
-            <button class="nav-btn" onclick="switchTab('solve-setup')">💻 서술형 학습실</button>
-            <button class="nav-btn" onclick="switchTab('reading-setup')">📖 독해형 학습실</button>
+    <!-- [추가] 사이트 전체 접속 제한용 로그인 화면 -->
+    <div id="login-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;">
+        <div class="card" style="text-align:center; max-width:400px; width:100%;">
+            <h2>🔒 시스템 접근 권한 확인</h2>
+            <p style="color:#94a3b8; margin-bottom:20px; font-size: 14px;">서비스를 이용하려면 비밀번호를 입력하세요.</p>
+            <input type="password" id="access-password" placeholder="비밀번호 입력" style="text-align:center; letter-spacing: 2px;" onkeypress="if(event.key==='Enter') loginAccess()">
+            <button id="btn-login" onclick="loginAccess()" style="width:100%; margin-top:10px;">로그인</button>
         </div>
+    </div>
 
-        <!-- 1. 지문 관리 탭 -->
-        <div id="main-app">
-            <div class="card admin-only admin-only-block">
-                <h2>✨ 1. 새로운 지문 데이터 등록 (빈출문장 지정)</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <select id="folder" style="margin-bottom: 0; flex: 1;"><option value="미분류">미분류</option></select>
-                    <button class="btn-outline" onclick="createNewFolder()" style="width: auto;">+ 새 폴더</button>
-                </div>
-                <input type="text" id="title" placeholder="지문 제목 (예: 24년 3월 고2 31번)">
-                <div class="text-row">
-                    <div class="text-col">
-                        <p style="margin:0 0 8px 5px; font-weight:bold; color:#a5f3fc; font-size:14px;">🔤 영어 원문</p>
-                        <textarea id="content" rows="6" placeholder="영어 문장을 입력하세요..."></textarea>
-                    </div>
-                    <div class="text-col">
-                        <p style="margin:0 0 8px 5px; font-weight:bold; color:#fca5a5; font-size:14px;">🇰🇷 한글 해석본</p>
-                        <textarea id="translation" rows="6" placeholder="해석을 입력하세요..."></textarea>
-                    </div>
-                </div>
-                <p style="font-size:12px; color:#ffd700; margin-top:-5px; margin-bottom:5px; font-weight:bold;">⭐ 아래 목록에서 터치/클릭하여 서술형 빈출 문장을 지정하세요.</p>
-                <div id="add-preview" class="sentence-preview"><p style="text-align:center; color:#64748b; font-size:13px; margin:10px;">문장을 입력하면 이곳에 나타납니다.</p></div>
-                <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
+    <!-- [수정] 기존 모든 컨텐츠는 id="app-content"로 감싸서 로그인 전까지 숨김 처리 -->
+    <div id="app-content" style="display:none;">
+        <div class="container">
+            <div class="top-nav" id="top-nav">
+                <button class="nav-btn active" onclick="switchTab('admin')">📑 지문 관리 및 인쇄</button>
+                <button class="nav-btn" onclick="switchTab('solve-setup')">💻 서술형 학습실</button>
+                <button class="nav-btn" onclick="switchTab('reading-setup')">📖 독해형 학습실</button>
             </div>
 
-            <div class="card">
-                <h2>🎯 인쇄용 시험지(PDF) 만들기</h2>
-                <div class="batch-control">
-                    <div class="batch-group">
-                        <span style="font-weight:bold; color:#a5f3fc;">⚡ 일괄 적용:</span>
-                        <input type="number" id="global-order" placeholder="순서" value="1" title="순서 배열">
-                        <input type="number" id="global-insert" placeholder="삽입" value="1" title="문장 삽입">
-                        <input type="number" id="global-desc" placeholder="서술" value="1" title="서술형 배열">
-                        <button class="btn-outline" onclick="applyGlobal()">적용</button>
+            <!-- 1. 지문 관리 탭 -->
+            <div id="main-app">
+                <div class="card admin-only admin-only-block">
+                    <h2>✨ 1. 새로운 지문 데이터 등록 (빈출문장 지정)</h2>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <select id="folder" style="margin-bottom: 0; flex: 1;"><option value="미분류">미분류</option></select>
+                        <button class="btn-outline" onclick="createNewFolder()" style="width: auto;">+ 새 폴더</button>
+                    </div>
+                    <input type="text" id="title" placeholder="지문 제목 (예: 24년 3월 고2 31번)">
+                    <div class="text-row">
+                        <div class="text-col">
+                            <p style="margin:0 0 8px 5px; font-weight:bold; color:#a5f3fc; font-size:14px;">🔤 영어 원문</p>
+                            <textarea id="content" rows="6" placeholder="영어 문장을 입력하세요..."></textarea>
+                        </div>
+                        <div class="text-col">
+                            <p style="margin:0 0 8px 5px; font-weight:bold; color:#fca5a5; font-size:14px;">🇰🇷 한글 해석본</p>
+                            <textarea id="translation" rows="6" placeholder="해석을 입력하세요..."></textarea>
+                        </div>
+                    </div>
+                    <p style="font-size:12px; color:#ffd700; margin-top:-5px; margin-bottom:5px; font-weight:bold;">⭐ 아래 목록에서 터치/클릭하여 서술형 빈출 문장을 지정하세요.</p>
+                    <div id="add-preview" class="sentence-preview"><p style="text-align:center; color:#64748b; font-size:13px; margin:10px;">문장을 입력하면 이곳에 나타납니다.</p></div>
+                    <button id="save-btn" onclick="saveToDB()" style="width: 100%;">DB에 업로드하기</button>
+                </div>
+
+                <div class="card">
+                    <h2>🎯 인쇄용 시험지(PDF) 만들기</h2>
+                    <div class="batch-control">
+                        <div class="batch-group">
+                            <span style="font-weight:bold; color:#a5f3fc;">⚡ 일괄 적용:</span>
+                            <input type="number" id="global-order" placeholder="순서" value="1" title="순서 배열">
+                            <input type="number" id="global-insert" placeholder="삽입" value="1" title="문장 삽입">
+                            <input type="number" id="global-desc" placeholder="서술" value="1" title="서술형 배열">
+                            <button class="btn-outline" onclick="applyGlobal()">적용</button>
+                        </div>
+                        
+                        <div class="admin-only admin-only-flex" style="display:flex; gap:10px; margin-left:auto; flex-wrap: wrap;">
+                            <button class="btn-outline" onclick="deleteSelectedPassages()" style="background: rgba(245, 87, 108, 0.1); color: #f87171; border-color: #f87171;">🗑 선택 삭제</button>
+                            <button class="btn-outline" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7;">📁 현재 순서 고정</button>
+                        </div>
                     </div>
                     
-                    <div class="admin-only admin-only-flex" style="display:flex; gap:10px; margin-left:auto; flex-wrap: wrap;">
-                        <button class="btn-outline" onclick="deleteSelectedPassages()" style="background: rgba(245, 87, 108, 0.1); color: #f87171; border-color: #f87171;">🗑 선택 삭제</button>
-                        <button class="btn-outline" onclick="saveCurrentOrder()" style="background: rgba(110, 231, 183, 0.1); color: #6ee7b7; border-color: #6ee7b7;">📁 현재 순서 고정</button>
-                    </div>
-                </div>
-                
-                <div style="background: rgba(255,215,0,0.05); padding:15px; border-radius:12px; border: 1px solid rgba(255,215,0,0.2); margin-bottom: 20px;">
-                    <p style="margin:0 0 10px 0; font-weight:bold; color:#ffd700;">⭐ 서술형 PDF 출제 옵션</p>
-                    <label class="radio-label"><input type="checkbox" id="pdf-freq-only"> <span>서술형 출제 시 <b>빈출 문장(⭐) 내에서만</b> 랜덤 출제</span></label>
-                    <label class="radio-label"><input type="checkbox" id="pdf-freq-all" onchange="document.getElementById('pdf-freq-only').disabled = this.checked;"> <span>문항수 설정 무시하고 <b>지정된 빈출 문장(⭐) 전체</b>를 서술형으로 출제</span></label>
-                </div>
-                
-                <div class="passage-row header-row" style="margin-top:0;">
-                    <input type="checkbox" id="select-all-main" onclick="toggleSelectAll('main')">
-                    <span>전체 선택 (목록 일괄 선택)</span>
-                    <span class="hide-on-mobile" style="text-align:right;">유형별 문항 수 설정</span>
-                    <span class="hide-on-mobile admin-only admin-only-inline" style="text-align:center;">관리</span>
-                </div>
-                <div id="passage-list"><p style="text-align:center; padding:20px;">불러오는 중...</p></div>
-                
-                <input type="text" id="custom-main-title" placeholder="출력될 시험지 제목" style="margin-top: 25px; margin-bottom: 10px;">
-                <button onclick="generateIntegratedQuiz()" class="btn-create">📄 PDF 시험지 만들기</button>
-            </div>
-            <div id="quiz-output"></div>
-            <button id="pdf-btn" onclick="downloadPDF()" style="display: none; width:100%; margin-top:20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border:none; color:white;">📄 완성된 시험지 PDF 다운로드</button>
-        </div>
-
-        <!-- 2. 서술형 셋업 탭 -->
-        <div id="solve-setup-app" style="display: none;">
-            <div class="card">
-                <h2>💻 서술형 집중 학습실</h2>
-                
-                <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 서술형 누적 학습 현황 (문장 단위)</span>
-                        <button class="btn-outline" onclick="resetLearningHistory('desc')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                    <div style="background: rgba(255,215,0,0.05); padding:15px; border-radius:12px; border: 1px solid rgba(255,215,0,0.2); margin-bottom: 20px;">
+                        <p style="margin:0 0 10px 0; font-weight:bold; color:#ffd700;">⭐ 서술형 PDF 출제 옵션</p>
+                        <label class="radio-label"><input type="checkbox" id="pdf-freq-only"> <span>서술형 출제 시 <b>빈출 문장(⭐) 내에서만</b> 랜덤 출제</span></label>
+                        <label class="radio-label"><input type="checkbox" id="pdf-freq-all" onchange="document.getElementById('pdf-freq-only').disabled = this.checked;"> <span>문항수 설정 무시하고 <b>지정된 빈출 문장(⭐) 전체</b>를 서술형으로 출제</span></label>
                     </div>
                     
-                    <div class="stat-box">
-                        <div class="stat-item" onclick="openHistoryModal('desc', 'unlearned')">
-                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="desc-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item" onclick="openHistoryModal('desc', 'correct')">
-                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="desc-correct" style="color:#34d399; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item" onclick="openHistoryModal('desc', 'incorrect')">
-                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="desc-incorrect" style="color:#f87171; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item">
-                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="desc-rate" style="color:#fbbf24; font-size:20px;">0%</b>
-                        </div>
+                    <div class="passage-row header-row" style="margin-top:0;">
+                        <input type="checkbox" id="select-all-main" onclick="toggleSelectAll('main')">
+                        <span>전체 선택 (목록 일괄 선택)</span>
+                        <span class="hide-on-mobile" style="text-align:right;">유형별 문항 수 설정</span>
+                        <span class="hide-on-mobile admin-only admin-only-inline" style="text-align:center;">관리</span>
                     </div>
+                    <div id="passage-list"><p style="text-align:center; padding:20px;">불러오는 중...</p></div>
+                    
+                    <input type="text" id="custom-main-title" placeholder="출력될 시험지 제목" style="margin-top: 25px; margin-bottom: 10px;">
+                    <button onclick="generateIntegratedQuiz()" class="btn-create">📄 PDF 시험지 만들기</button>
+                </div>
+                <div id="quiz-output"></div>
+                <button id="pdf-btn" onclick="downloadPDF()" style="display: none; width:100%; margin-top:20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border:none; color:white;">📄 완성된 시험지 PDF 다운로드</button>
+            </div>
 
-                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+            <!-- 2. 서술형 셋업 탭 -->
+            <div id="solve-setup-app" style="display: none;">
+                <div class="card">
+                    <h2>💻 서술형 집중 학습실</h2>
+                    
+                    <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                        <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 서술형 누적 학습 현황 (문장 단위)</span>
+                            <button class="btn-outline" onclick="resetLearningHistory('desc')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                        </div>
+                        
+                        <div class="stat-box">
+                            <div class="stat-item" onclick="openHistoryModal('desc', 'unlearned')">
+                                <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="desc-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item" onclick="openHistoryModal('desc', 'correct')">
+                                <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="desc-correct" style="color:#34d399; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item" onclick="openHistoryModal('desc', 'incorrect')">
+                                <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="desc-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item">
+                                <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="desc-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                            </div>
+                        </div>
 
-                    <div style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 10px; flex-wrap: wrap;">
-                        <label class="radio-label"><input type="radio" name="desc-filter" value="all" checked> 전체 문장</label>
-                        <label class="radio-label"><input type="radio" name="desc-filter" value="unlearned"> 미학습</label>
-                        <label class="radio-label"><input type="radio" name="desc-filter" value="learned_all"> 학습 완료(전체)</label>
-                        <label class="radio-label"><input type="radio" name="desc-filter" value="learned_correct"> 정답만</label>
-                        <label class="radio-label"><input type="radio" name="desc-filter" value="learned_incorrect"> 오답만</label>
+                        <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 5px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <label class="radio-label"><input type="radio" name="desc-filter" value="all" checked> 전체 문장</label>
+                            <label class="radio-label"><input type="radio" name="desc-filter" value="unlearned"> 미학습</label>
+                            <label class="radio-label"><input type="radio" name="desc-filter" value="learned_all"> 학습 완료(전체)</label>
+                            <label class="radio-label"><input type="radio" name="desc-filter" value="learned_correct"> 정답만</label>
+                            <label class="radio-label"><input type="radio" name="desc-filter" value="learned_incorrect"> 오답만</label>
+                        </div>
+                        
+                        <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+
+                        <label class="radio-label"><input type="radio" name="solve-mode" id="mode-all" value="all" checked onchange="toggleSolveMode()">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문의 <span style="color:#fca5a5;">모든 문장</span> 학습</span>
+                        </label>
+                        <label class="radio-label"><input type="radio" name="solve-mode" id="mode-random" value="random" onchange="toggleSolveMode()">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문 전체 중 랜덤 출제: </span>
+                            <input type="number" id="random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
+                        </label>
+                        <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 10px 0;"></div>
+                        <label class="radio-label"><input type="radio" name="solve-mode" id="mode-freq-all" value="freq-all" onchange="toggleSolveMode()">
+                            <span style="font-weight:bold; color:#ffd700; font-size:16px;">⭐ 지정된 빈출 문장 전체 학습</span>
+                        </label>
+                        <label class="radio-label"><input type="radio" name="solve-mode" id="mode-freq-random" value="freq-random" onchange="toggleSolveMode()">
+                            <span style="font-weight:bold; color:#ffd700; font-size:16px;">⭐ 빈출 문장 중 랜덤 출제: </span>
+                            <input type="number" id="freq-random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
+                        </label>
+                    </div>
+                    <div class="passage-row header-row passage-row-simple" style="margin-top:0;">
+                        <input type="checkbox" id="select-all-solve" onclick="toggleSelectAll('solve')">
+                        <span>학습할 지문 전체 선택</span>
+                    </div>
+                    <div id="solve-passage-list"><p style="text-align:center; padding:20px;">로딩 중...</p></div>
+                    <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startInteractiveSolving()">🚀 서술형 학습 시작</button>
+                </div>
+            </div>
+
+            <!-- 3. 독해형 셋업 탭 -->
+            <div id="reading-setup-app" style="display: none;">
+                <div class="card">
+                    <h2>📖 독해형 집중 학습실 (지문 단위)</h2>
+                    
+                    <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                        <!-- 순서 배열 통계 -->
+                        <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 순서 배열 학습 현황</span>
+                            <button class="btn-outline" onclick="resetLearningHistory('order')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-item" onclick="openHistoryModal('order', 'unlearned')">
+                                <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="order-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item" onclick="openHistoryModal('order', 'correct')">
+                                <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="order-correct" style="color:#34d399; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item" onclick="openHistoryModal('order', 'incorrect')">
+                                <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="order-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item">
+                                <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="order-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                            </div>
+                        </div>
+
+                        <!-- 문장 삽입 통계 -->
+                        <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-top: 10px;">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 문장 삽입 학습 현황</span>
+                            <button class="btn-outline" onclick="resetLearningHistory('insert')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-item" onclick="openHistoryModal('insert', 'unlearned')">
+                                <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="insert-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item" onclick="openHistoryModal('insert', 'correct')">
+                                <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="insert-correct" style="color:#34d399; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item" onclick="openHistoryModal('insert', 'incorrect')">
+                                <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="insert-incorrect" style="color:#f87171; font-size:20px;">0</b>
+                            </div>
+                            <div class="stat-item">
+                                <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="insert-rate" style="color:#fbbf24; font-size:20px;">0%</b>
+                            </div>
+                        </div>
+
+                        <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 15px 0 5px 0;"></div>
+
+                        <div style="margin-bottom: 10px; width: 100%;">
+                            <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">출제 유형 선택</span>
+                            <div style="display: flex; gap: 15px;">
+                                <label class="radio-label" style="flex:1; background:rgba(0,0,0,0.3); justify-content:center;"><input type="radio" name="reading-type" value="order" checked> 순서 배열 풀기</label>
+                                <label class="radio-label" style="flex:1; background:rgba(0,0,0,0.3); justify-content:center;"><input type="radio" name="reading-type" value="insert"> 문장 삽입 풀기</label>
+                            </div>
+                        </div>
+
+                        <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
+
+                        <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">학습 기록 필터</span>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <label class="radio-label"><input type="radio" name="reading-filter" value="all" checked> 전체 지문</label>
+                            <label class="radio-label"><input type="radio" name="reading-filter" value="unlearned"> 미학습 지문</label>
+                            <label class="radio-label"><input type="radio" name="reading-filter" value="learned_correct"> 정답 지문만</label>
+                            <label class="radio-label"><input type="radio" name="reading-filter" value="learned_incorrect"> 오답 지문만</label>
+                        </div>
+
+                        <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 10px 0;"></div>
+                        
+                        <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">출제 문항 수 선택</span>
+                        <label class="radio-label"><input type="radio" name="reading-mode" value="all" checked onchange="toggleReadingMode()">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">조건에 맞는 <span style="color:#fca5a5;">모든 지문</span> 학습</span>
+                        </label>
+                        <label class="radio-label"><input type="radio" name="reading-mode" value="random" onchange="toggleReadingMode()">
+                            <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">조건에 맞는 지문 중 랜덤 출제: </span>
+                            <input type="number" id="reading-random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
+                        </label>
                     </div>
                     
-                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
-
-                    <label class="radio-label"><input type="radio" name="solve-mode" id="mode-all" value="all" checked onchange="toggleSolveMode()">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문의 <span style="color:#fca5a5;">모든 문장</span> 학습</span>
-                    </label>
-                    <label class="radio-label"><input type="radio" name="solve-mode" id="mode-random" value="random" onchange="toggleSolveMode()">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">지문 전체 중 랜덤 출제: </span>
-                        <input type="number" id="random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
-                    </label>
-                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 10px 0;"></div>
-                    <label class="radio-label"><input type="radio" name="solve-mode" id="mode-freq-all" value="freq-all" onchange="toggleSolveMode()">
-                        <span style="font-weight:bold; color:#ffd700; font-size:16px;">⭐ 지정된 빈출 문장 전체 학습</span>
-                    </label>
-                    <label class="radio-label"><input type="radio" name="solve-mode" id="mode-freq-random" value="freq-random" onchange="toggleSolveMode()">
-                        <span style="font-weight:bold; color:#ffd700; font-size:16px;">⭐ 빈출 문장 중 랜덤 출제: </span>
-                        <input type="number" id="freq-random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
-                    </label>
+                    <div class="passage-row header-row passage-row-simple" style="margin-top:0;">
+                        <input type="checkbox" id="select-all-read" onclick="toggleSelectAll('read')">
+                        <span>학습할 지문 전체 선택</span>
+                    </div>
+                    <div id="read-passage-list"><p style="text-align:center; padding:20px;">로딩 중...</p></div>
+                    <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startReadingSolving()">🚀 독해형 학습 시작</button>
                 </div>
-                <div class="passage-row header-row passage-row-simple" style="margin-top:0;">
-                    <input type="checkbox" id="select-all-solve" onclick="toggleSelectAll('solve')">
-                    <span>학습할 지문 전체 선택</span>
-                </div>
-                <div id="solve-passage-list"><p style="text-align:center; padding:20px;">로딩 중...</p></div>
-                <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startInteractiveSolving()">🚀 서술형 학습 시작</button>
             </div>
-        </div>
 
-        <!-- 3. 독해형 셋업 탭 -->
-        <div id="reading-setup-app" style="display: none;">
-            <div class="card">
-                <h2>📖 독해형 집중 학습실 (지문 단위)</h2>
-                
-                <div class="batch-control" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-                    <!-- 순서 배열 통계 -->
-                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 순서 배열 학습 현황</span>
-                        <button class="btn-outline" onclick="resetLearningHistory('order')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
+            <!-- 서술형 풀이 화면 -->
+            <div id="solver-app" style="display: none;">
+                <div class="solver-header">
+                    <h2 id="solver-title" style="border:none; margin:0; padding:0;">서술형 단어 배열 훈련</h2>
+                    <button id="btn-close-solver" class="btn-outline" onclick="closeSolver()" style="background:transparent; color:#f87171; border-color:#f87171;">학습 종료하기</button>
+                </div>
+                <div id="solver-progress" style="margin-bottom: 15px; color: #a5f3fc; font-weight: bold; font-size: 16px;">문제 1 / 5</div>
+                <div class="card">
+                    <div id="solver-kor" class="solver-kor">해석본 로딩 중...</div>
+                    <div id="answer-dropzone" class="answer-dropzone"></div>
+                    <div id="word-pool" class="word-pool"></div>
+                    <div id="solver-result" class="solver-result"></div>
+                    <div class="solver-actions" style="display: flex; gap: 10px;">
+                        <button id="btn-check" onclick="checkInteractiveAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
+                        <button id="btn-retry" onclick="retryInteractiveQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
+                        <button id="btn-next" onclick="loadNextInteractive()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-item" onclick="openHistoryModal('order', 'unlearned')">
-                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="order-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item" onclick="openHistoryModal('order', 'correct')">
-                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="order-correct" style="color:#34d399; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item" onclick="openHistoryModal('order', 'incorrect')">
-                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="order-incorrect" style="color:#f87171; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item">
-                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="order-rate" style="color:#fbbf24; font-size:20px;">0%</b>
-                        </div>
-                    </div>
+                </div>
+            </div>
 
-                    <!-- 문장 삽입 통계 -->
-                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-top: 10px;">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">📚 문장 삽입 학습 현황</span>
-                        <button class="btn-outline" onclick="resetLearningHistory('insert')" style="padding: 4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius: 4px;">기록 초기화</button>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-item" onclick="openHistoryModal('insert', 'unlearned')">
-                            <span style="font-size:12px; color:#94a3b8;">미학습</span><br><b id="insert-unlearned" style="color:#e0f8ff; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item" onclick="openHistoryModal('insert', 'correct')">
-                            <span style="font-size:12px; color:#94a3b8;">정답</span><br><b id="insert-correct" style="color:#34d399; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item" onclick="openHistoryModal('insert', 'incorrect')">
-                            <span style="font-size:12px; color:#94a3b8;">오답</span><br><b id="insert-incorrect" style="color:#f87171; font-size:20px;">0</b>
-                        </div>
-                        <div class="stat-item">
-                            <span style="font-size:12px; color:#94a3b8;">학습률</span><br><b id="insert-rate" style="color:#fbbf24; font-size:20px;">0%</b>
-                        </div>
-                    </div>
-
-                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 15px 0 5px 0;"></div>
-
-                    <div style="margin-bottom: 10px; width: 100%;">
-                        <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">출제 유형 선택</span>
-                        <div style="display: flex; gap: 15px;">
-                            <label class="radio-label" style="flex:1; background:rgba(0,0,0,0.3); justify-content:center;"><input type="radio" name="reading-type" value="order" checked> 순서 배열 풀기</label>
-                            <label class="radio-label" style="flex:1; background:rgba(0,0,0,0.3); justify-content:center;"><input type="radio" name="reading-type" value="insert"> 문장 삽입 풀기</label>
-                        </div>
-                    </div>
-
-                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 5px 0;"></div>
-
-                    <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">학습 기록 필터</span>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                        <label class="radio-label"><input type="radio" name="reading-filter" value="all" checked> 전체 지문</label>
-                        <label class="radio-label"><input type="radio" name="reading-filter" value="unlearned"> 미학습 지문</label>
-                        <label class="radio-label"><input type="radio" name="reading-filter" value="learned_correct"> 정답 지문만</label>
-                        <label class="radio-label"><input type="radio" name="reading-filter" value="learned_incorrect"> 오답 지문만</label>
-                    </div>
-
-                    <div style="height:1px; width:100%; background:rgba(255,215,0,0.3); margin: 10px 0;"></div>
+            <!-- 독해형 풀이 화면 -->
+            <div id="reading-solver-app" style="display: none;">
+                <div class="solver-header">
+                    <h2 id="reading-solver-title" style="border:none; margin:0; padding:0;">독해형 훈련</h2>
+                    <button id="btn-close-reading" class="btn-outline" onclick="closeReadingSolver()" style="background:transparent; color:#f87171; border-color:#f87171;">학습 종료하기</button>
+                </div>
+                <div id="reading-solver-progress" style="margin-bottom: 15px; color: #a5f3fc; font-weight: bold; font-size: 16px;">문제 1 / 5</div>
+                <div class="card">
+                    <div id="reading-direction" style="color:#ffd700; font-weight:bold; margin-bottom: 15px;">지시문</div>
                     
-                    <span style="font-weight:bold; color:#a5f3fc; display:block; margin-bottom:5px;">출제 문항 수 선택</span>
-                    <label class="radio-label"><input type="radio" name="reading-mode" value="all" checked onchange="toggleReadingMode()">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">조건에 맞는 <span style="color:#fca5a5;">모든 지문</span> 학습</span>
-                    </label>
-                    <label class="radio-label"><input type="radio" name="reading-mode" value="random" onchange="toggleReadingMode()">
-                        <span style="font-weight:bold; color:#a5f3fc; font-size:16px;">조건에 맞는 지문 중 랜덤 출제: </span>
-                        <input type="number" id="reading-random-count" value="3" min="1" disabled style="width:60px; text-align:center;"> <span>문제</span>
-                    </label>
+                    <!-- 문제 렌더링 영역 -->
+                    <div id="reading-content-area"></div>
+                    
+                    <div id="reading-solver-result" class="solver-result" style="margin-top:20px;"></div>
+                    <div class="solver-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button id="btn-reading-check" onclick="checkReadingAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
+                        <button id="btn-reading-retry" onclick="retryReadingQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
+                        <button id="btn-reading-next" onclick="loadNextReading()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
+                    </div>
                 </div>
-                
-                <div class="passage-row header-row passage-row-simple" style="margin-top:0;">
-                    <input type="checkbox" id="select-all-read" onclick="toggleSelectAll('read')">
-                    <span>학습할 지문 전체 선택</span>
-                </div>
-                <div id="read-passage-list"><p style="text-align:center; padding:20px;">로딩 중...</p></div>
-                <button class="btn-solve" style="width:100%; margin-top: 25px; font-size: 18px; padding: 15px;" onclick="startReadingSolving()">🚀 독해형 학습 시작</button>
             </div>
-        </div>
 
-        <!-- 서술형 풀이 화면 -->
-        <div id="solver-app" style="display: none;">
-            <div class="solver-header">
-                <h2 id="solver-title" style="border:none; margin:0; padding:0;">서술형 단어 배열 훈련</h2>
-                <button id="btn-close-solver" class="btn-outline" onclick="closeSolver()" style="background:transparent; color:#f87171; border-color:#f87171;">학습 종료하기</button>
-            </div>
-            <div id="solver-progress" style="margin-bottom: 15px; color: #a5f3fc; font-weight: bold; font-size: 16px;">문제 1 / 5</div>
-            <div class="card">
-                <div id="solver-kor" class="solver-kor">해석본 로딩 중...</div>
-                <div id="answer-dropzone" class="answer-dropzone"></div>
-                <div id="word-pool" class="word-pool"></div>
-                <div id="solver-result" class="solver-result"></div>
-                <div class="solver-actions" style="display: flex; gap: 10px;">
-                    <button id="btn-check" onclick="checkInteractiveAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
-                    <button id="btn-retry" onclick="retryInteractiveQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
-                    <button id="btn-next" onclick="loadNextInteractive()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 독해형 풀이 화면 -->
-        <div id="reading-solver-app" style="display: none;">
-            <div class="solver-header">
-                <h2 id="reading-solver-title" style="border:none; margin:0; padding:0;">독해형 훈련</h2>
-                <button id="btn-close-reading" class="btn-outline" onclick="closeReadingSolver()" style="background:transparent; color:#f87171; border-color:#f87171;">학습 종료하기</button>
-            </div>
-            <div id="reading-solver-progress" style="margin-bottom: 15px; color: #a5f3fc; font-weight: bold; font-size: 16px;">문제 1 / 5</div>
-            <div class="card">
-                <div id="reading-direction" style="color:#ffd700; font-weight:bold; margin-bottom: 15px;">지시문</div>
-                
-                <!-- 문제 렌더링 영역 -->
-                <div id="reading-content-area"></div>
-                
-                <div id="reading-solver-result" class="solver-result" style="margin-top:20px;"></div>
-                <div class="solver-actions" style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button id="btn-reading-check" onclick="checkReadingAnswer()" style="flex:2; padding: 15px; font-size: 16px;">✅ 정답 확인</button>
-                    <button id="btn-reading-retry" onclick="retryReadingQuestion()" style="flex:1; background: #eab308; display: none; padding: 15px; font-size: 16px; color: #fff;">🔄 다시 풀기</button>
-                    <button id="btn-reading-next" onclick="loadNextReading()" style="flex:1; background: #64748b; display: none; padding: 15px; font-size: 16px;">다음 문제 ➔</button>
-                </div>
-            </div>
-        </div>
+        </div> <!-- #app-content end -->
 
     </div>
 
+    <!-- 숨겨진 관리자 호출 버튼 -->
     <button class="admin-trigger" onclick="toggleAdminMode()" title="관리자 모드">⚙️</button>
 
     <div class="modal-overlay" id="edit-modal">
@@ -460,8 +474,8 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxN8aH1tvgARagzegJSEFDRz86P639CvBu4IFl8miIJz2sC4VTnNZo_xFgK64G5C-MC/exec";
-        const ADMIN_PASSWORD = "loveng090630";
+        // [중요] 반드시 새로 발급받은 웹 앱 URL로 교체해 주세요!
+        const GAS_URL = "여기에_새_URL_붙여넣기";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
         
@@ -480,20 +494,96 @@
         let readingSortable = null;
         let selectedInsertGap = -1;
 
+        // [추가] 초기 실행 및 세션 검증
         window.onload = async () => {
-            try {
-                if (sessionStorage.getItem('admin_auth') === 'true') { 
-                    isAdmin = true; document.body.classList.add('admin-mode'); 
-                }
-            } catch(e) { console.warn("Storage restricted by browser."); }
-            
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                initApp();
+            }
+        };
+
+        function initApp() {
+            if (sessionStorage.getItem('admin_auth') === 'true') { 
+                isAdmin = true; 
+                document.body.classList.add('admin-mode'); 
+            }
             loadList();
-            
             document.getElementById('content').addEventListener('input', () => renderPreview('content', 'translation', 'add-preview', addFreqState));
             document.getElementById('translation').addEventListener('input', () => renderPreview('content', 'translation', 'add-preview', addFreqState));
             document.getElementById('edit-content').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
-        };
+        }
+
+        // [추가] 접속 비밀번호 확인 로직
+        async function loginAccess() {
+            const pwd = document.getElementById('access-password').value;
+            if(!pwd) return alert("비밀번호를 입력하세요.");
+
+            const btn = document.getElementById('btn-login');
+            const originalText = btn.innerText;
+            btn.innerText = "서버 확인 중..."; 
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "verify_access", password: pwd })
+                });
+                const data = await res.json();
+                
+                if (data.valid) {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'block';
+                    initApp();
+                } else {
+                    alert("비밀번호가 일치하지 않습니다.");
+                }
+            } catch(e) {
+                alert("서버 통신에 실패했습니다.\nURL이 맞는지, 또는 새 버전 배포를 했는지 확인해주세요.");
+            } finally {
+                btn.innerText = originalText; 
+                btn.disabled = false;
+            }
+        }
+
+        // [수정] 관리자 모드 비밀번호도 서버를 통해 확인하도록 변경
+        async function toggleAdminMode() { 
+            if (isAdmin) { 
+                if(confirm("관리자 모드를 종료하시겠습니까?")) { 
+                    isAdmin = false; 
+                    sessionStorage.removeItem('admin_auth'); 
+                    document.body.classList.remove('admin-mode'); 
+                } 
+                return; 
+            } 
+            
+            const pwd = prompt("관리자 비밀번호를 입력하세요:"); 
+            if (!pwd) return;
+            
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "verify_admin", password: pwd })
+                });
+                const data = await res.json();
+                
+                if (data.valid) {
+                    isAdmin = true; 
+                    sessionStorage.setItem('admin_auth', 'true'); 
+                    document.body.classList.add('admin-mode');
+                    alert("✅ 관리자 모드가 활성화되었습니다.");
+                } else {
+                    alert("❌ 비밀번호가 일치하지 않습니다.");
+                }
+            } catch(e) {
+                alert("서버 통신에 실패했습니다.");
+            }
+        }
+
 
         async function resetLearningHistory(type) {
             let msg = type === 'desc' ? "서술형 기록을 전체 초기화할까요?" : 
@@ -514,7 +604,6 @@
             }
         }
 
-        // 현황 클릭 시 모달 (서술형, 순서배열, 문장삽입 통합)
         function openHistoryModal(type, status) {
             if(!globalCategorizedData) return;
             let filteredList = globalCategorizedData[type] ? (globalCategorizedData[type][status] || []) : [];
@@ -529,7 +618,6 @@
                 htmlStr = `<p style="text-align:center; color:#94a3b8; margin-top:20px;">해당하는 데이터가 없습니다.</p>`;
             } else {
                 filteredList.forEach(item => {
-                    // 서술형은 문장단위, 독해형은 지문단위이므로 표시 형식을 다르게 처리
                     if(type === 'desc') {
                         htmlStr += `
                             <div class="preview-item ${item.isFreq ? 'is-freq' : ''}" style="cursor:default; margin-bottom: 10px; background: rgba(255,255,255,0.03);">
@@ -541,7 +629,6 @@
                                 </div>
                             </div>`;
                     } else {
-                        // 독해형 (지문 클릭 시 상세보기 연결)
                         htmlStr += `
                             <div class="preview-item" style="margin-bottom: 10px; background: rgba(255,255,255,0.03);" onclick="openViewModal('${item.passageId}')">
                                 <div class="preview-text" style="width:100%;">
@@ -608,11 +695,9 @@
             }
         }
 
-        // 화면 갱신 (서술형, 순서배열, 문장삽입 통계 업데이트)
         function updateLearningStats(stats) {
             if (!stats) return;
             
-            // 서술형
             let d_total = stats.desc.correct + stats.desc.incorrect + stats.desc.unlearned;
             let d_rate = d_total === 0 ? 0 : Math.floor(((stats.desc.correct + stats.desc.incorrect) / d_total) * 100);
             document.getElementById('desc-unlearned').innerText = stats.desc.unlearned;
@@ -620,7 +705,6 @@
             document.getElementById('desc-incorrect').innerText = stats.desc.incorrect;
             document.getElementById('desc-rate').innerText = d_rate + "%";
 
-            // 순서배열
             let o_total = stats.order.correct + stats.order.incorrect + stats.order.unlearned;
             let o_rate = o_total === 0 ? 0 : Math.floor(((stats.order.correct + stats.order.incorrect) / o_total) * 100);
             document.getElementById('order-unlearned').innerText = stats.order.unlearned;
@@ -628,7 +712,6 @@
             document.getElementById('order-incorrect').innerText = stats.order.incorrect;
             document.getElementById('order-rate').innerText = o_rate + "%";
 
-            // 문장삽입
             let i_total = stats.insert.correct + stats.insert.incorrect + stats.insert.unlearned;
             let i_rate = i_total === 0 ? 0 : Math.floor(((stats.insert.correct + stats.insert.incorrect) / i_total) * 100);
             document.getElementById('insert-unlearned').innerText = stats.insert.unlearned;
@@ -778,7 +861,6 @@
             location.reload(); 
         }
         async function deletePassage(id) { if(!confirm("삭제하시겠습니까?")) return; await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "delete", id: id }) }); location.reload(); }
-        function toggleAdminMode() { if (isAdmin) { if(confirm("종료하시겠습니까?")) { isAdmin = false; sessionStorage.removeItem('admin_auth'); document.body.classList.remove('admin-mode'); } return; } const pwd = prompt("관리자 비밀번호:"); if (pwd === ADMIN_PASSWORD) { isAdmin = true; sessionStorage.setItem('admin_auth', 'true'); document.body.classList.add('admin-mode'); } }
         
         async function openViewModal(id) {
             document.getElementById('view-modal').style.display = 'flex';
@@ -863,13 +945,12 @@
             document.getElementById('freq-random-count').disabled = !document.getElementById('mode-freq-random').checked;
         }
         
-        // [추가] 독해형 문항 수 선택 토글
         function toggleReadingMode() {
             document.getElementById('reading-random-count').disabled = !document.querySelector('input[name="reading-mode"][value="random"]').checked;
         }
 
         // ==========================================
-        // 1. 서술형 학습실 로직 (기존)
+        // 1. 서술형 학습실 로직
         // ==========================================
         async function startInteractiveSolving() {
             const selectedIds = [];
@@ -982,7 +1063,7 @@
         }
 
         // ==========================================
-        // 2. 독해형 학습실 로직 (순서배열/문장삽입)
+        // 2. 독해형 학습실 로직 
         // ==========================================
         async function startReadingSolving() {
             const selectedIds = [];
@@ -991,8 +1072,6 @@
 
             const type = document.querySelector('input[name="reading-type"]:checked').value;
             const historyFilter = document.querySelector('input[name="reading-filter"]:checked').value;
-            
-            // [추가] 독해형 전용 랜덤 모드 파라미터 읽기
             const mode = document.querySelector('input[name="reading-mode"]:checked').value;
             const count = parseInt(document.getElementById('reading-random-count').value) || 1;
 
@@ -1100,7 +1179,6 @@
                 resDiv.classList.add('wrong-anim'); status = "incorrect";
             }
 
-            // 기록 임시 저장 (독해형은 target이 passageId 자체)
             sessionHistoryUpdates.push({ passageId: q.passageId, type: q.type, target: q.passageId, status: status });
 
             document.getElementById('btn-reading-check').style.display = 'none';
