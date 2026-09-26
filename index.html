@@ -155,7 +155,7 @@
     </style>
 </head>
 <body>
-    <!-- [추가] 사이트 전체 접속 제한용 로그인 화면 -->
+    <!-- 사이트 전체 접속 제한용 로그인 화면 -->
     <div id="login-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;">
         <div class="card" style="text-align:center; max-width:400px; width:100%;">
             <h2>🔒 시스템 접근 권한 확인</h2>
@@ -165,7 +165,7 @@
         </div>
     </div>
 
-    <!-- [수정] 기존 모든 컨텐츠는 id="app-content"로 감싸서 로그인 전까지 숨김 처리 -->
+    <!-- 기존 모든 컨텐츠는 id="app-content"로 감싸서 로그인 전까지 숨김 처리 -->
     <div id="app-content" style="display:none;">
         <div class="container">
             <div class="top-nav" id="top-nav">
@@ -451,12 +451,25 @@
         </div>
     </div>
     
+    <!-- [수정] 지문 상세보기 모달 (원문/해석 개별 복사 버튼 추가) -->
     <div class="modal-overlay" id="view-modal">
         <div class="card modal-box" style="max-width: 650px;">
             <h2 id="view-modal-title">📖 지문 상세보기</h2>
             <div style="display:flex; gap:15px; flex-wrap:wrap;">
-                <div id="view-modal-content" style="flex:1; background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; line-height: 1.7;"></div>
-                <div id="view-modal-trans" style="flex:1; background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; line-height: 1.7; color: #fca5a5;"></div>
+                <div style="flex:1; min-width: 250px; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-weight:bold; color:#a5f3fc; font-size:14px;">🔤 영어 원문</span>
+                        <button class="btn-outline" id="btn-copy-eng" onclick="copyViewText('eng')" style="padding:4px 10px; font-size:12px; border-radius:6px;">📋 원문 복사</button>
+                    </div>
+                    <div id="view-modal-content" style="flex:1; background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; line-height: 1.7;"></div>
+                </div>
+                <div style="flex:1; min-width: 250px; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-weight:bold; color:#fca5a5; font-size:14px;">🇰🇷 한글 해석본</span>
+                        <button class="btn-outline" id="btn-copy-kor" onclick="copyViewText('kor')" style="padding:4px 10px; font-size:12px; border-color:#fca5a5; color:#fca5a5; border-radius:6px;">📋 해석 복사</button>
+                    </div>
+                    <div id="view-modal-trans" style="flex:1; background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; line-height: 1.7; color: #fca5a5;"></div>
+                </div>
             </div>
             <div class="modal-actions"><button class="btn-cancel" onclick="closeViewModal()" style="background: #3b82f6; border: none; width: 100px;">닫기</button></div>
         </div>
@@ -474,7 +487,6 @@
     </div>
 
     <script>
-        // [중요] 반드시 새로 발급받은 웹 앱 URL로 교체해 주세요!
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxN8aH1tvgARagzegJSEFDRz86P639CvBu4IFl8miIJz2sC4VTnNZo_xFgK64G5C-MC/exec";
         let isAdmin = false;
         let globalFolders = new Set(["미분류"]);
@@ -494,7 +506,11 @@
         let readingSortable = null;
         let selectedInsertGap = -1;
 
-        // [추가] 초기 실행 및 세션 검증
+        // [추가] 상세보기 복사 기능을 위한 원본 텍스트 저장 변수
+        let currentViewEng = "";
+        let currentViewKor = "";
+
+        // 초기 실행 및 세션 검증
         window.onload = async () => {
             if (sessionStorage.getItem('isLoggedIn') === 'true') {
                 document.getElementById('login-screen').style.display = 'none';
@@ -515,7 +531,7 @@
             document.getElementById('edit-translation').addEventListener('input', () => renderPreview('edit-content', 'edit-translation', 'edit-preview', editFreqState));
         }
 
-        // [추가] 접속 비밀번호 확인 로직
+        // 접속 비밀번호 확인 로직
         async function loginAccess() {
             const pwd = document.getElementById('access-password').value;
             if(!pwd) return alert("비밀번호를 입력하세요.");
@@ -549,7 +565,7 @@
             }
         }
 
-        // [수정] 관리자 모드 비밀번호도 서버를 통해 확인하도록 변경
+        // 관리자 모드 비밀번호 확인
         async function toggleAdminMode() { 
             if (isAdmin) { 
                 if(confirm("관리자 모드를 종료하시겠습니까?")) { 
@@ -583,7 +599,6 @@
                 alert("서버 통신에 실패했습니다.");
             }
         }
-
 
         async function resetLearningHistory(type) {
             let msg = type === 'desc' ? "서술형 기록을 전체 초기화할까요?" : 
@@ -864,10 +879,16 @@
         
         async function openViewModal(id) {
             document.getElementById('view-modal').style.display = 'flex';
+            currentViewEng = "";
+            currentViewKor = "";
+            document.getElementById('btn-copy-eng').innerText = "📋 원문 복사";
+            document.getElementById('btn-copy-kor').innerText = "📋 해석 복사";
             try {
                 const res = await fetch(GAS_URL + "?action=get_passage&id=" + id + "&t=" + new Date().getTime()); 
                 const data = await res.json();
                 document.getElementById('view-modal-title').innerText = `📖 ${data.title}`;
+                currentViewEng = data.content || "";
+                currentViewKor = data.translation || "";
                 let contentHtml = "", transHtml = "";
                 const engLines = data.content.split('\n'); const korLines = (data.translation||"").split('\n');
                 engLines.forEach((eng, idx) => {
@@ -880,6 +901,42 @@
             } catch(e) { }
         }
         function closeViewModal() { document.getElementById('view-modal').style.display = 'none'; }
+
+        // [추가] 지문 원문/해석본 개별 클립보드 복사 함수
+        function copyViewText(type) {
+            const textToCopy = type === 'eng' ? currentViewEng : currentViewKor;
+            if (!textToCopy || textToCopy.trim() === "") return alert("복사할 내용이 없습니다.");
+
+            const btnId = type === 'eng' ? 'btn-copy-eng' : 'btn-copy-kor';
+            const origLabel = type === 'eng' ? '📋 원문 복사' : '📋 해석 복사';
+            const btn = document.getElementById(btnId);
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    btn.innerText = "✅ 복사 완료!";
+                    setTimeout(() => { btn.innerText = origLabel; }, 1500);
+                }).catch(() => fallbackCopyText(textToCopy, btn, origLabel));
+            } else {
+                fallbackCopyText(textToCopy, btn, origLabel);
+            }
+        }
+
+        function fallbackCopyText(text, btn, origLabel) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                btn.innerText = "✅ 복사 완료!";
+                setTimeout(() => { btn.innerText = origLabel; }, 1500);
+            } catch (e) {
+                alert("복사에 실패했습니다.");
+            }
+            document.body.removeChild(ta);
+        }
         
         async function openEditModal(id) {
             document.getElementById('edit-modal').style.display = 'flex'; document.getElementById('edit-id').value = id;
